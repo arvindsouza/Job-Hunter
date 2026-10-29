@@ -1,0 +1,162 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2330;
+  --line: #2b3a4d;
+  --text: #e8eef5;
+  --muted: #93a4b8;
+  --link: #7cc4ff;
+  --good: #3dd68c;
+  --mid: #f5c14a;
+  --low: #ff7a7a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.status {
+  margin: 0 0 32px;
+  color: var(--link);
+  font-size: 0.95rem;
+}
+
+.status.done {
+  color: var(--good);
+}
+
+.status.error {
+  color: var(--low);
+}
+
+.tables {
+  display: grid;
+  gap: 28px;
+}
+
+section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+section h2 {
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+td {
+  border-bottom: 1px solid var(--line);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.job-title {
+  font-weight: 600;
+}
+
+a {
+  color: var(--link);
+}
+
+.rating {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.rating.good {
+  color: var(--good);
+}
+
+.rating.mid {
+  color: var(--mid);
+}
+
+.rating.low {
+  color: var(--low);
+}
+
+.empty {
+  padding: 20px;
+  color: var(--muted);
+}
+
+.col-job {
+  min-width: 180px;
+}
+
+.col-company {
+  min-width: 140px;
+}
+
+.col-link {
+  min-width: 110px;
+}
+
+.col-rating {
+  min-width: 90px;
+}
+
+.col-why,
+.col-weak,
+.col-note {
+  min-width: 180px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
