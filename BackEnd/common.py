@@ -155,18 +155,45 @@ def score_job(title: str, description: str, config: dict) -> dict:
     }
 
 
+CHROME_PROFILE_ROOT = PROJECT_ROOT / ".chrome-profile"
+
+
+def chrome_profile_dir(role_id: str) -> Path:
+    return CHROME_PROFILE_ROOT / role_id
+APPLY_URL_HINTS = (
+    "apply",
+    "career",
+    "job",
+    "greenhouse",
+    "lever.co",
+    "myworkday",
+    "workday",
+    "ashbyhq",
+    "icims",
+    "taleo",
+    "smartrecruiters",
+    "jobvite",
+    "recruitee",
+    "boards.greenhouse",
+    "successfactors",
+    "oraclecloud",
+)
+
+
 def is_linkedin_url(url: str) -> bool:
     if not url:
         return False
-    return "linkedin.com" in urlparse(url).netloc.lower()
+    host = urlparse(url).netloc.lower()
+    return "linkedin.com" in host or "licdn.com" in host
 
 
 def decode_embedded_url(raw: str) -> str:
-    text = html.unescape(raw.strip())
+    text = html.unescape(raw.strip().rstrip(".,);"))
+    text = text.replace("\\u002f", "/").replace("\\/", "/")
     try:
         text = json.loads(f'"{text}"')
     except json.JSONDecodeError:
-        text = text.replace("\\/", "/")
+        pass
     if "linkedin.com/safety/go" in text or "linkedin.com/redir" in text:
         query = parse_qs(urlparse(text).query)
         for key in ("url", "dest", "u"):
@@ -179,7 +206,7 @@ def follow_apply_redirect(page, url: str) -> str:
     if not url or not is_linkedin_url(url):
         return url
     try:
-        response = page.request.get(url, timeout=15000)
+        response = page.request.get(url, timeout=15000, max_redirects=10)
         final_url = response.url
         if final_url and not is_linkedin_url(final_url):
             return final_url
@@ -210,10 +237,14 @@ def page_looks_like_easy_apply(page, html_source: str) -> bool:
     return False
 
 
-def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
-    html_source = page.content()
-    easy_apply = page_looks_like_easy_apply(page, html_source)
-    company_url = ""
+def collect_external_urls(html_source: str) -> list[str]:
+    found: list[str] = []
+    patterns = [
+        r"https?://[^\s\"'<>\\]+",
+        r"https:\\u002f\\u002f[^\s\"'\\]+",
+    ]
+    for pattern in patterns:
+        found.extend(re.findall(pattern, html_source, flags=re.I))
     for pattern in [
         r'"companyApplyUrl"\s*:\s*"(.*?)"',
         r'"companyApplyInUrl"\s*:\s*"(.*?)"',
@@ -221,19 +252,106 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
         r'"applyUrl"\s*:\s*"(.*?)"',
         r'data-company-apply-url="(.*?)"',
     ]:
-        match = re.search(pattern, html_source, flags=re.I)
-        if not match:
+        found.extend(re.findall(pattern, html_source, flags=re.I))
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for raw in found:
+        url = decode_embedded_url(raw)
+        if not url.startswith("http") or is_linkedin_url(url):
             continue
-        candidate = decode_embedded_url(match.group(1))
-        if candidate.startswith("http") and not is_linkedin_url(candidate):
-            company_url = candidate
-            break
-        if candidate.startswith("http") and is_linkedin_url(candidate):
-            resolved = follow_apply_redirect(page, candidate)
-            if resolved and not is_linkedin_url(resolved):
-                company_url = resolved
-                break
+        if url in seen:
+            continue
+        seen.add(url)
+        cleaned.append(url)
+    return cleaned
 
+
+def pick_company_apply_url(candidates: list[str]) -> str:
+    if not candidates:
+        return ""
+
+    def score(url: str) -> int:
+        low = url.lower()
+        points = 1
+        for hint in APPLY_URL_HINTS:
+            if hint in low:
+                points += 4
+        return points
+
+    ranked = sorted(candidates, key=score, reverse=True)
+    return ranked[0]
+
+
+def dismiss_apply_modal(page) -> None:
+    for selector in [
+        "button[aria-label='Dismiss']",
+        "button.modal__dismiss",
+        "button:has-text('Not now')",
+        "button:has-text('Skip')",
+    ]:
+        locator = page.locator(selector).first
+        try:
+            if locator.count() > 0 and locator.is_visible():
+                locator.click(timeout=1500)
+                page.wait_for_timeout(400)
+                return
+        except Exception:
+            continue
+
+
+def click_apply_for_company_url(page, linkedin_url: str) -> str:
+    """Click Apply and keep the first non-LinkedIn URL that opens."""
+    selectors = [
+        "button.jobs-apply-button",
+        "button.jobs-apply-button--top-card",
+        "a.jobs-apply-button",
+        "button:has-text('Apply on company website')",
+        "a:has-text('Apply on company website')",
+        "button:has-text('Apply')",
+        "a.apply-button",
+        "button.top-card-layout__cta--primary",
+    ]
+    origin = page.url
+    for selector in selectors:
+        locator = page.locator(selector).first
+        try:
+            if locator.count() == 0 or not locator.is_visible():
+                continue
+            context = page.context
+            new_page = None
+            try:
+                with context.expect_page(timeout=4500) as popup:
+                    locator.click(timeout=2500)
+                new_page = popup.value
+            except Exception:
+                locator.click(timeout=2500)
+            if new_page is not None:
+                new_page.wait_for_load_state("domcontentloaded", timeout=12000)
+                url = new_page.url
+                new_page.close()
+                if url.startswith("http") and not is_linkedin_url(url):
+                    return url
+            page.wait_for_timeout(800)
+            if page.url.startswith("http") and not is_linkedin_url(page.url):
+                found = page.url
+                page.goto(linkedin_url, wait_until="domcontentloaded", timeout=30000)
+                return found
+            dismiss_apply_modal(page)
+            if page.url != origin and is_linkedin_url(page.url):
+                page.goto(linkedin_url, wait_until="domcontentloaded", timeout=30000)
+        except Exception:
+            dismiss_apply_modal(page)
+            continue
+    return ""
+
+
+def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
+    html_source = page.content()
+    easy_apply = page_looks_like_easy_apply(page, html_source)
+    if easy_apply:
+        return linkedin_url, True
+
+    company_url = pick_company_apply_url(collect_external_urls(html_source))
     if not company_url:
         for selector in [
             "a[data-tracking-control-name*='offsite']",
@@ -249,9 +367,7 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
                     continue
                 href = locator.get_attribute("href") or ""
                 href = urljoin(linkedin_url, href)
-                if not href.startswith("http"):
-                    continue
-                if not is_linkedin_url(href):
+                if href.startswith("http") and not is_linkedin_url(href):
                     company_url = href
                     break
                 resolved = follow_apply_redirect(page, href)
@@ -261,7 +377,10 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
             except Exception:
                 continue
 
-    if company_url:
+    if not company_url:
+        company_url = click_apply_for_company_url(page, linkedin_url)
+
+    if company_url and not is_linkedin_url(company_url):
         return company_url, False
     return linkedin_url, easy_apply
 
@@ -273,9 +392,6 @@ def fetch_job_details(page, url: str) -> dict:
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1500)
-        apply_url, easy_apply = extract_apply_target(page, url)
-        details["apply_url"] = apply_url
-        details["easy_apply"] = easy_apply
         for selector in [
             "div.show-more-less-html__markup",
             "div.description__text",
@@ -290,6 +406,8 @@ def fetch_job_details(page, url: str) -> dict:
             if len(text) > 80:
                 details["description"] = re.sub(r"\s+", " ", text)
                 break
+        details["apply_url"] = url
+        details["easy_apply"] = page_looks_like_easy_apply(page, page.content())
     except Exception:
         return details
     return details
@@ -466,7 +584,7 @@ def job_to_ui_row(job: dict) -> dict:
     return {
         "title": job.get("title", ""),
         "company": job.get("company", ""),
-        "link": job.get("apply_url") or job.get("link", ""),
+        "link": job.get("link", ""),
         "easy_apply": bool(job.get("easy_apply")),
         "rating": job.get("score"),
         "why": " | ".join(
@@ -708,9 +826,16 @@ def run_agent(role_id: str) -> int:
     publish_ui([], f"{label}: starting", True, role)
 
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=False, channel="chrome")
-        context = browser.new_context(viewport={"width": 1280, "height": 900}, locale="en-US")
-        page = context.new_page()
+        profile_dir = chrome_profile_dir(role_id)
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        context = playwright.chromium.launch_persistent_context(
+            user_data_dir=str(profile_dir),
+            channel="chrome",
+            headless=False,
+            viewport={"width": 1280, "height": 900},
+            locale="en-US",
+        )
+        page = context.pages[0] if context.pages else context.new_page()
         found: list[dict] = []
         seen: set[str] = set()
         try:
@@ -732,7 +857,7 @@ def run_agent(role_id: str) -> int:
             return 1
         finally:
             page.wait_for_timeout(2000)
-            browser.close()
+            context.close()
 
     if not started_server:
         return 0

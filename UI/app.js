@@ -86,17 +86,7 @@ function renderTable(jobs, running, emptyRun) {
     .map((job) => {
       let link = "No link";
       if (job.link && job.link !== "Link not found") {
-        let label = "Apply on company site";
-        try {
-          const host = new URL(job.link).hostname;
-          if (job.easy_apply) {
-            label = "Easy Apply";
-          } else if (host.includes("linkedin.com")) {
-            label = "LinkedIn listing";
-          }
-        } catch {
-          label = job.easy_apply ? "Easy Apply" : "Apply on company site";
-        }
+        const label = job.easy_apply ? "Easy Apply" : "Open on LinkedIn";
         link = `<a href="${escapeHtml(job.link)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
       }
       return `
