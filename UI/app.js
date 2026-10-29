@@ -26,6 +26,7 @@ let latestData = {
   },
 };
 let lastTableSignature = "";
+let currentTimeRange = "week";
 
 function escapeHtml(text) {
   return String(text ?? "")
@@ -124,12 +125,15 @@ function renderTable(jobs, running, emptyRun) {
 }
 
 function normalizePayload(payload) {
+  const settings = (payload && payload.settings) || {};
+  const timeRange = settings.time_range === "24h" ? "24h" : "week";
   if (payload && payload.jobs) {
     return {
       status: payload.status || "",
       running: Boolean(payload.running),
       running_by_role: payload.running_by_role || {},
       agent_procs: payload.agent_procs || { em: false, tpm: false },
+      settings: { time_range: timeRange },
       jobs: payload.jobs,
     };
   }
@@ -138,8 +142,16 @@ function normalizePayload(payload) {
     running: false,
     running_by_role: {},
     agent_procs: { em: false, tpm: false },
+    settings: { time_range: timeRange },
     jobs: payload || {},
   };
+}
+
+function paintTimeRange(timeRange) {
+  currentTimeRange = timeRange === "24h" ? "24h" : "week";
+  document.querySelectorAll("[data-time-range]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.timeRange === currentTimeRange);
+  });
 }
 
 function paintResumeCard(role, summary) {
@@ -206,6 +218,8 @@ function paintView() {
       button.removeAttribute("aria-current");
     }
   });
+
+  paintTimeRange((latestData.settings && latestData.settings.time_range) || currentTimeRange);
 
   const emJobs = jobsAtOrAboveMin(latestData.jobs["Software Engineering Manager"]);
   const tpmJobs = jobsAtOrAboveMin(latestData.jobs["Technical Program Manager"]);
@@ -318,6 +332,39 @@ async function pullLiveJobs() {
     });
   }
 }
+
+async function setTimeRange(timeRange) {
+  paintTimeRange(timeRange);
+  const response = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ time_range: currentTimeRange }),
+  });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  paintTimeRange(payload.time_range || currentTimeRange);
+}
+
+document.querySelector(".nav-range").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-time-range]");
+  if (!button) {
+    return;
+  }
+  try {
+    await setTimeRange(button.dataset.timeRange);
+  } catch (error) {
+    const statusEl = document.getElementById("live-status");
+    statusEl.textContent = error.message || "Could not save time range.";
+    statusEl.classList.add("error");
+  }
+});
 
 document.querySelector(".nav-tabs").addEventListener("click", (event) => {
   const button = event.target.closest("[data-view]");

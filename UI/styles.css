@@ -28,10 +28,11 @@ body {
 .navbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 24px;
-  height: 56px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 24px;
+  min-height: 56px;
   border-bottom: 1px solid var(--line);
   background: #121a24;
   position: sticky;
@@ -68,6 +69,49 @@ body {
 .nav-tab.is-active {
   color: var(--text);
   background: var(--panel);
+}
+
+.nav-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+@media (max-width: 900px) {
+  .nav-range {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+.nav-range-label {
+  color: var(--muted);
+  font-size: 13px;
+  margin-right: 4px;
+}
+
+.range-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.range-btn:hover {
+  color: var(--text);
+  background: #1c2736;
+}
+
+.range-btn.is-active {
+  color: var(--text);
+  background: var(--panel);
+  border-color: #3d5570;
 }
 
 .page {

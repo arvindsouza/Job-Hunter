@@ -28,6 +28,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = PROJECT_ROOT / "UI"
 ASSETS_DIR = PROJECT_ROOT / "Assets"
 BACKEND_DIR = Path(__file__).resolve().parent
+SETTINGS_PATH = UI_DIR / "settings.json"
+DEFAULT_TIME_RANGE = "week"
+TIME_RANGE_SECONDS = {
+    "24h": 86400,
+    "week": 604800,
+}
 UI_HOST = "127.0.0.1"
 UI_PORT = 8765
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
@@ -425,13 +431,45 @@ def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
         publish_ui(jobs, f"{config['label']}: scored ({index}/{total})", True, config["search"])
 
 
+def normalize_time_range(value: str | None) -> str:
+    if value in TIME_RANGE_SECONDS:
+        return value
+    return DEFAULT_TIME_RANGE
+
+
+def default_settings() -> dict:
+    return {"time_range": DEFAULT_TIME_RANGE}
+
+
+def load_settings() -> dict:
+    if not SETTINGS_PATH.exists():
+        return default_settings()
+    try:
+        data = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default_settings()
+    if not isinstance(data, dict):
+        return default_settings()
+    return {"time_range": normalize_time_range(data.get("time_range"))}
+
+
+def save_settings(updates: dict) -> dict:
+    with UI_STATE_LOCK:
+        settings = load_settings()
+        if "time_range" in updates:
+            settings["time_range"] = normalize_time_range(updates.get("time_range"))
+        SETTINGS_PATH.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+        return settings
+
+
 def build_search_url(job_title: str) -> str:
+    seconds = TIME_RANGE_SECONDS[load_settings()["time_range"]]
     return (
         "https://www.linkedin.com/jobs/search/"
         f"?keywords={quote(job_title)}"
         "&location=Bengaluru%2C%20Karnataka%2C%20India"
         "&geoId=105214831"
-        "&f_TPR=r604800"
+        f"&f_TPR=r{seconds}"
         "&position=1"
         "&pageNum=0"
     )
@@ -723,7 +761,11 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             with UI_STATE_LOCK:
                 payload = read_jobs_file()
             payload["agent_procs"] = agent_run_status()
+            payload["settings"] = load_settings()
             self._send_json(payload)
+            return
+        if path == "/api/settings":
+            self._send_json(load_settings())
             return
         if path == "/api/resumes":
             self._send_json(list_resume_summaries())
@@ -735,6 +777,22 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/settings":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                self._send_json({"error": "Invalid settings"}, 400)
+                return
+            if "time_range" in body and body["time_range"] not in TIME_RANGE_SECONDS:
+                self._send_json({"error": "time_range must be 24h or week"}, 400)
+                return
+            self._send_json(save_settings(body))
+            return
         if parsed.path == "/api/run":
             length = int(self.headers.get("Content-Length") or 0)
             if length:
