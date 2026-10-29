@@ -18,17 +18,24 @@ from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
+from resume_extract import list_resume_summaries, load_profile, save_resume
+
 SEM_SEARCH = "Software Engineering Manager"
 TPM_SEARCH = "Technical Program Manager"
 ALL_ROLES = [SEM_SEARCH, TPM_SEARCH]
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = PROJECT_ROOT / "UI"
+ASSETS_DIR = PROJECT_ROOT / "Assets"
+BACKEND_DIR = Path(__file__).resolve().parent
 UI_HOST = "127.0.0.1"
 UI_PORT = 8765
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 TITLE_FIT_MAX = 20
+MIN_RATING = 50
 UI_STATE_LOCK = threading.Lock()
+AGENT_LOCK = threading.Lock()
+AGENT_PROCS: dict[str, subprocess.Popen] = {}
 
 JOB_CARD_SELECTORS = [
     "div.base-card.job-search-card",
@@ -73,193 +80,41 @@ def title_fit_tpm(title: str) -> tuple[int, str]:
     return 4, "title is a weak TPM match"
 
 
-EM_CONFIG = {
-    "search": SEM_SEARCH,
-    "label": "Engineering Manager",
-    "resume_path": r"C:\Users\Arvin\Downloads\Resume_Updated_09_22.pdf",
-    "title_fit_fn": title_fit_sem,
-    "gap_signals": [
-        (r"\bjava\b", "Java"),
-        (r"\bpython\b", "Python"),
-        (r"\bgolang\b|\bgo lang\b", "Go"),
-        (r"kubernetes|\bk8s\b", "Kubernetes"),
-        (r"\baws\b", "AWS"),
-        (r"\bmicroservices\b", "Microservices"),
-        (r"\bkafka\b", "Kafka"),
-        (r"\bfintech\b", "Fintech"),
-        (r"\bsaas\b", "SaaS"),
-    ],
-    "skill_groups": [
-        {
-            "name": "C# / .NET",
-            "weight": 12,
-            "patterns": [r"\bc#\b", r"c sharp", r"\.net", r"dotnet", r"asp\.net"],
-        },
-        {
-            "name": "WPF / desktop apps",
-            "weight": 6,
-            "patterns": [r"\bwpf\b", r"winforms", r"windows desktop", r"desktop application"],
-        },
-        {
-            "name": "SQL / data",
-            "weight": 5,
-            "patterns": [r"\bsql\b", r"database", r"postgresql", r"sql server"],
-        },
-        {
-            "name": "Angular / React / TypeScript",
-            "weight": 6,
-            "patterns": [r"angular", r"react", r"typescript", r"\bhtml\b", r"\bcss\b"],
-        },
-        {
-            "name": "Azure DevOps / Agile",
-            "weight": 8,
-            "patterns": [r"azure devops", r"\badop\b", r"\bagile\b", r"\bscrum\b", r"sprint", r"backlog"],
-        },
-        {
-            "name": "Cloud (GCP / Alibaba / Azure)",
-            "weight": 6,
-            "patterns": [r"google cloud", r"\bgcp\b", r"alibaba", r"\bazure\b", r"cloud"],
-        },
-        {
-            "name": "People / team leadership",
-            "weight": 12,
-            "patterns": [
-                r"people management",
-                r"engineering manager",
-                r"team lead",
-                r"mentorship",
-                r"mentor",
-                r"hiring",
-                r"talent",
-                r"direct report",
-                r"people manager",
-            ],
-        },
-        {
-            "name": "Program / delivery management",
-            "weight": 8,
-            "patterns": [
-                r"program management",
-                r"program manager",
-                r"cross-functional",
-                r"roadmap",
-                r"stakeholder",
-                r"capacity planning",
-            ],
-        },
-        {
-            "name": "Architecture",
-            "weight": 5,
-            "patterns": [r"architect", r"scalable", r"system design", r"technical liaison"],
-        },
-        {
-            "name": "Computer vision / ML",
-            "weight": 6,
-            "patterns": [r"computer vision", r"\bcv\b", r"machine learning", r"\bml\b", r"onnx", r"inference"],
-        },
-        {
-            "name": "Industrial / energy domain",
-            "weight": 6,
-            "patterns": [r"scada", r"industrial automation", r"oil", r"\bgas\b", r"energy", r"oilfield", r"upstream"],
-        },
-    ],
+ROLE_META = {
+    "em": {
+        "search": SEM_SEARCH,
+        "label": "Engineering Manager",
+        "title_fit_fn": title_fit_sem,
+    },
+    "tpm": {
+        "search": TPM_SEARCH,
+        "label": "Technical Program Manager",
+        "title_fit_fn": title_fit_tpm,
+    },
 }
 
-TPM_CONFIG = {
-    "search": TPM_SEARCH,
-    "label": "Technical Program Manager",
-    "resume_path": r"C:\Users\Arvin\Downloads\Arvin_Anthony_DSouza_TPM_Resume.pdf",
-    "title_fit_fn": title_fit_tpm,
-    "gap_signals": [
-        (r"\bjira\b", "Jira"),
-        (r"\bpmp\b|\bpmi\b", "PMP/PMI"),
-        (r"\bsafe agile\b|\bscaled agile\b", "SAFe"),
-        (r"\bpmo\b", "PMO"),
-        (r"\baws\b", "AWS"),
-        (r"kubernetes|\bk8s\b", "Kubernetes"),
-        (r"\bjava\b", "Java"),
-        (r"\bfintech\b", "Fintech"),
-        (r"\bsilicon\b|\bsemiconductor\b", "Semiconductor"),
-    ],
-    "skill_groups": [
-        {
-            "name": "End-to-end program lifecycle",
-            "weight": 12,
-            "patterns": [
-                r"end-to-end",
-                r"program lifecycle",
-                r"program delivery",
-                r"program ownership",
-                r"delivery lifecycle",
-            ],
-        },
-        {
-            "name": "Cross-functional / stakeholder leadership",
-            "weight": 12,
-            "patterns": [
-                r"cross-functional",
-                r"cross functional",
-                r"stakeholder",
-                r"executive",
-                r"liaison",
-                r"distributed team",
-            ],
-        },
-        {
-            "name": "Agile / Scrum / Azure DevOps",
-            "weight": 10,
-            "patterns": [r"azure devops", r"\badop\b", r"\bagile\b", r"\bscrum\b", r"sprint", r"backlog"],
-        },
-        {
-            "name": "Roadmap / milestones / governance",
-            "weight": 8,
-            "patterns": [r"roadmap", r"milestone", r"governance", r"critical path", r"on-time"],
-        },
-        {
-            "name": "Dependencies / risk / delivery metrics",
-            "weight": 8,
-            "patterns": [r"dependenc", r"risk", r"mitigat", r"bottleneck", r"metrics"],
-        },
-        {
-            "name": "Capacity / resource / budget",
-            "weight": 7,
-            "patterns": [
-                r"capacity planning",
-                r"resource allocation",
-                r"resource scaling",
-                r"budget",
-                r"operational overhead",
-            ],
-        },
-        {
-            "name": "Pre-sales / scoping / system design",
-            "weight": 6,
-            "patterns": [
-                r"pre-sales",
-                r"presales",
-                r"scoping",
-                r"system design",
-                r"initiation",
-                r"requirements",
-            ],
-        },
-        {
-            "name": "AI/ML / computer vision",
-            "weight": 6,
-            "patterns": [r"machine learning", r"\bml\b", r"\bai\b", r"automl", r"computer vision", r"onnx"],
-        },
-        {
-            "name": "Industrial / energy / SCADA",
-            "weight": 6,
-            "patterns": [r"industrial automation", r"scada", r"oil", r"\bgas\b", r"energy", r"enterprise software"],
-        },
-        {
-            "name": "Cloud (GCP / Alibaba)",
-            "weight": 5,
-            "patterns": [r"google cloud", r"\bgcp\b", r"alibaba", r"cloud infrastructure", r"\bcloud\b"],
-        },
-    ],
-}
+
+def load_agent_config(role_id: str) -> dict | None:
+    """Build a scoring config from Assets/<role>/profile.json. None if not uploaded."""
+    if role_id not in ROLE_META:
+        raise ValueError("role_id must be em or tpm")
+    profile = load_profile(role_id)
+    if not profile:
+        return None
+    groups = profile.get("skill_groups") or []
+    if not groups:
+        return None
+    gaps = [tuple(item) for item in profile.get("gap_signals") or [] if len(item) == 2]
+    meta = ROLE_META[role_id]
+    return {
+        "search": meta["search"],
+        "label": meta["label"],
+        "title_fit_fn": meta["title_fit_fn"],
+        "skill_groups": groups,
+        "gap_signals": gaps,
+        "resume_path": str(ASSETS_DIR / role_id / "resume.pdf"),
+        "source_filename": profile.get("source_filename", "resume.pdf"),
+    }
 
 
 def score_job(title: str, description: str, config: dict) -> dict:
@@ -285,7 +140,11 @@ def score_job(title: str, description: str, config: dict) -> dict:
     if not description.strip():
         score = min(score, 45)
 
-    gaps = [label for pattern, label in config["gap_signals"] if re.search(pattern, blob, flags=re.I)]
+    gaps = [
+        label
+        for pattern, label in config.get("gap_signals", [])
+        if re.search(pattern, blob, flags=re.I)
+    ]
     return {
         "score": score,
         "title_note": title_note,
@@ -649,7 +508,12 @@ def read_jobs_file() -> dict:
 
 def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
     """Merge this agent's rows into the shared UI payload without wiping the other role."""
-    rows = [job_to_ui_row(job) for job in jobs]
+    rows = []
+    for job in jobs:
+        score = job.get("score")
+        if score is not None and score < MIN_RATING:
+            continue
+        rows.append(job_to_ui_row(job))
     rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
 
     with UI_STATE_LOCK:
@@ -669,6 +533,45 @@ def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
         )
 
 
+def agent_script_path(role_id: str) -> Path:
+    name = "em_agent.py" if role_id == "em" else "tpm_agent.py"
+    return BACKEND_DIR / name
+
+
+def agent_is_running(role_id: str) -> bool:
+    with AGENT_LOCK:
+        proc = AGENT_PROCS.get(role_id)
+        return proc is not None and proc.poll() is None
+
+
+def agent_run_status() -> dict[str, bool]:
+    return {"em": agent_is_running("em"), "tpm": agent_is_running("tpm")}
+
+
+def start_fresh_run(role_id: str) -> dict:
+    if role_id not in ROLE_META:
+        return {"ok": False, "error": "role must be em or tpm"}
+    if not load_agent_config(role_id):
+        return {"ok": False, "error": "Upload a resume for this role first."}
+    if agent_is_running(role_id):
+        return {"ok": False, "error": "A fresh run is already in progress for this role."}
+
+    meta = ROLE_META[role_id]
+    publish_ui([], f"{meta['label']}: starting fresh run", True, meta["search"])
+    command = [sys.executable, "-u", str(agent_script_path(role_id))]
+    creationflags = 0
+    if sys.platform == "win32":
+        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+    proc = subprocess.Popen(
+        command,
+        cwd=str(PROJECT_ROOT),
+        creationflags=creationflags,
+    )
+    with AGENT_LOCK:
+        AGENT_PROCS[role_id] = proc
+    return {"ok": True, "status": f"{meta['label']} agent started"}
+
+
 class UiRequestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(UI_DIR), **kwargs)
@@ -676,20 +579,74 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         return
 
+    def _cors(self) -> None:
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Filename")
+        self.send_header("Cache-Control", "no-store")
+
+    def _send_json(self, payload: dict, status: int = 200) -> None:
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self._cors()
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+
     def do_GET(self):
         path = urlparse(self.path).path
         if path in ("/api/jobs", "/jobs.json"):
             with UI_STATE_LOCK:
-                body = json.dumps(read_jobs_file()).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Cache-Control", "no-store")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+                payload = read_jobs_file()
+            payload["agent_procs"] = agent_run_status()
+            self._send_json(payload)
+            return
+        if path == "/api/resumes":
+            self._send_json(list_resume_summaries())
+            return
+        if path == "/api/runs":
+            self._send_json(agent_run_status())
             return
         super().do_GET()
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/run":
+            length = int(self.headers.get("Content-Length") or 0)
+            if length:
+                self.rfile.read(length)
+            role = (parse_qs(parsed.query).get("role") or [""])[0].lower()
+            result = start_fresh_run(role)
+            self._send_json(result, 200 if result.get("ok") else 400)
+            return
+        if parsed.path != "/api/resume":
+            self.send_error(404)
+            return
+        role = (parse_qs(parsed.query).get("role") or [""])[0].lower()
+        if role not in ROLE_META:
+            self._send_json({"error": "role must be em or tpm"}, 400)
+            return
+        length = int(self.headers.get("Content-Length") or 0)
+        if length < 8 or length > 20_000_000:
+            self._send_json({"error": "Upload a PDF under 20MB"}, 400)
+            return
+        data = self.rfile.read(length)
+        if not data.startswith(b"%PDF"):
+            self._send_json({"error": "File must be a PDF"}, 400)
+            return
+        filename = self.headers.get("X-Filename") or "resume.pdf"
+        try:
+            summary = save_resume(role, data, filename)
+        except Exception as exc:
+            self._send_json({"error": f"Could not read PDF: {exc}"}, 400)
+            return
+        self._send_json(summary)
 
 
 def ui_server_url() -> str:
@@ -718,19 +675,37 @@ def open_in_chrome(url: str) -> None:
     subprocess.Popen([CHROME_PATH, url], close_fds=True)
 
 
-def run_agent(config: dict) -> int:
-    role = config["search"]
-    label = config["label"]
-    publish_ui([], f"{label}: starting", True, role)
+def run_agent(role_id: str) -> int:
+    meta = ROLE_META[role_id]
+    role = meta["search"]
+    label = meta["label"]
     server, ui_url, started_server = ensure_ui_server()
     print(f"{label} agent")
-    print(f"Resume: {config['resume_path']}")
     print(f"Live UI: {ui_url}")
     if started_server:
         print("This process is serving the UI. Press Ctrl+C when you are done.\n")
-        open_in_chrome(ui_url)
+
+    config = load_agent_config(role_id)
+    if not config:
+        print("No resume uploaded for this role.")
+        print("Open the Resumes tab, upload a PDF, then run this agent again.\n")
+        open_in_chrome(ui_url + "#/resumes")
+        if started_server:
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                if server is not None:
+                    server.shutdown()
+        return 1
+
+    print(f"Resume: {config['source_filename']}")
+    if started_server:
+        open_in_chrome(ui_url + ("#/tpm" if role_id == "tpm" else "#/em"))
     else:
         print("UI server already running; this agent will only scrape.\n")
+
+    publish_ui([], f"{label}: starting", True, role)
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, channel="chrome")

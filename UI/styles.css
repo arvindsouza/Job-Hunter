@@ -76,10 +76,38 @@ body {
   padding: 24px 24px 64px;
 }
 
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
 .view-title {
-  margin: 0 0 8px;
+  margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
+}
+
+.run-btn {
+  appearance: none;
+  border: 0;
+  background: #2b4c6f;
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.run-btn:hover:not(:disabled) {
+  background: #35608a;
+}
+
+.run-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .status {
@@ -101,6 +129,57 @@ body {
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.uploads {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.upload-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.upload-card h3 {
+  margin: 0 0 8px;
+}
+
+.upload-meta {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.skill-list {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: var(--muted);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.upload-btn {
+  display: inline-block;
+  background: #2b4c6f;
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.upload-hint {
+  margin: 10px 0 12px;
+  min-height: 1.2em;
+  color: var(--link);
+  font-size: 0.9rem;
 }
 
 .count {

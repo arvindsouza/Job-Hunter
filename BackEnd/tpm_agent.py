@@ -1,4 +1,4 @@
-"""Technical Program Manager LinkedIn scout. Scores jobs against the TPM resume."""
+"""Technical Program Manager LinkedIn scout. Scores jobs against the uploaded TPM resume."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import TPM_CONFIG, run_agent
+from common import run_agent
 
 if __name__ == "__main__":
-    raise SystemExit(run_agent(TPM_CONFIG))
+    raise SystemExit(run_agent("tpm"))

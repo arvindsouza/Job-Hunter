@@ -10,8 +10,11 @@
     <div class="app">
       <header class="navbar">
         <div class="brand">Bengaluru job matches</div>
-        <nav class="nav-tabs" aria-label="Role">
-          <button type="button" class="nav-tab is-active" data-view="em" aria-current="page">
+        <nav class="nav-tabs" aria-label="App">
+          <button type="button" class="nav-tab is-active" data-view="resumes" aria-current="page">
+            Resumes
+          </button>
+          <button type="button" class="nav-tab" data-view="em">
             EM <span id="em-count" class="count">(0)</span>
           </button>
           <button type="button" class="nav-tab" data-view="tpm">
@@ -21,10 +24,39 @@
       </header>
 
       <main class="page">
-        <p id="view-title" class="view-title">Engineering Manager</p>
+        <div class="view-header">
+          <p id="view-title" class="view-title">Resumes</p>
+          <button type="button" id="fresh-run-btn" class="run-btn is-hidden">Fresh run</button>
+        </div>
         <p id="live-status" class="status">Connecting to the agent…</p>
-        <section class="panel">
+
+        <section id="jobs-panel" class="panel is-hidden">
           <div id="jobs-table"></div>
+        </section>
+
+        <section id="resumes-panel" class="uploads">
+          <article class="upload-card">
+            <h3>Engineering Manager</h3>
+            <p class="upload-meta" id="em-resume-meta">No resume uploaded.</p>
+            <ul class="skill-list" id="em-skill-list"></ul>
+            <label class="upload-btn">
+              Upload PDF
+              <input id="em-resume-input" type="file" accept="application/pdf,.pdf" hidden />
+            </label>
+            <p class="upload-hint" id="em-resume-hint"></p>
+            <button type="button" class="run-btn" data-run-role="em">Fresh EM run</button>
+          </article>
+          <article class="upload-card">
+            <h3>Technical Program Manager</h3>
+            <p class="upload-meta" id="tpm-resume-meta">No resume uploaded.</p>
+            <ul class="skill-list" id="tpm-skill-list"></ul>
+            <label class="upload-btn">
+              Upload PDF
+              <input id="tpm-resume-input" type="file" accept="application/pdf,.pdf" hidden />
+            </label>
+            <p class="upload-hint" id="tpm-resume-hint"></p>
+            <button type="button" class="run-btn" data-run-role="tpm">Fresh TPM run</button>
+          </article>
         </section>
       </main>
     </div>

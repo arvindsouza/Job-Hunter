@@ -1,4 +1,4 @@
-"""Engineering Manager LinkedIn scout. Scores jobs against the SEM resume."""
+"""Engineering Manager LinkedIn scout. Scores jobs against the uploaded EM resume."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from common import EM_CONFIG, run_agent
+from common import run_agent
 
 if __name__ == "__main__":
-    raise SystemExit(run_agent(EM_CONFIG))
+    raise SystemExit(run_agent("em"))

@@ -1,4 +1,7 @@
 const VIEWS = {
+  resumes: {
+    title: "Resumes",
+  },
   em: {
     key: "Software Engineering Manager",
     title: "Engineering Manager",
@@ -11,11 +14,12 @@ const VIEWS = {
   },
 };
 
-let currentView = "em";
+let currentView = "resumes";
 let latestData = {
   status: "",
   running: false,
   running_by_role: {},
+  agent_procs: { em: false, tpm: false },
   jobs: {
     "Software Engineering Manager": [],
     "Technical Program Manager": [],
@@ -48,6 +52,12 @@ function dash(value) {
   return text ? escapeHtml(text) : "—";
 }
 
+const MIN_RATING = 50;
+
+function jobsAtOrAboveMin(jobs) {
+  return (jobs || []).filter((job) => job.rating == null || job.rating === "" || job.rating >= MIN_RATING);
+}
+
 function roleIsRunning(data, viewId) {
   const role = VIEWS[viewId].key;
   if (data.running_by_role && role in data.running_by_role) {
@@ -67,7 +77,7 @@ function renderTable(jobs, running, emptyRun) {
   if (!jobs.length) {
     const empty = running
       ? "Waiting for the scraper to find jobs…"
-      : `No jobs saved yet. Run ${emptyRun}`;
+      : `No jobs saved yet. Upload a resume, then run ${emptyRun}`;
     root.innerHTML = `<p class="empty">${escapeHtml(empty)}</p>`;
     return;
   }
@@ -129,6 +139,7 @@ function normalizePayload(payload) {
       status: payload.status || "",
       running: Boolean(payload.running),
       running_by_role: payload.running_by_role || {},
+      agent_procs: payload.agent_procs || { em: false, tpm: false },
       jobs: payload.jobs,
     };
   }
@@ -136,8 +147,61 @@ function normalizePayload(payload) {
     status: "",
     running: false,
     running_by_role: {},
+    agent_procs: { em: false, tpm: false },
     jobs: payload || {},
   };
+}
+
+function paintResumeCard(role, summary) {
+  const meta = document.getElementById(`${role}-resume-meta`);
+  const list = document.getElementById(`${role}-skill-list`);
+  if (!summary || !summary.uploaded) {
+    meta.textContent = "No resume uploaded.";
+    list.innerHTML = "";
+    return;
+  }
+  meta.textContent = `${summary.filename} · ${summary.skill_count} skill(s) extracted`;
+  list.innerHTML = (summary.skills || [])
+    .map((skill) => `<li>${escapeHtml(skill)}</li>`)
+    .join("");
+}
+
+async function refreshResumes() {
+  try {
+    const response = await fetch(`/api/resumes?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    paintResumeCard("em", data.em);
+    paintResumeCard("tpm", data.tpm);
+  } catch {
+    document.getElementById("em-resume-meta").textContent =
+      "Start the UI server to upload: python BackEnd\\ui_server.py";
+  }
+}
+
+async function uploadResume(role, file) {
+  const hint = document.getElementById(`${role}-resume-hint`);
+  hint.textContent = "Extracting skills…";
+  try {
+    const response = await fetch(`/api/resume?role=${role}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+        "X-Filename": file.name,
+      },
+      body: file,
+    });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    hint.textContent = "Saved to Assets. Agents will use this profile.";
+    await refreshResumes();
+  } catch (error) {
+    hint.textContent = error.message || "Upload failed.";
+  }
 }
 
 function paintView() {
@@ -153,41 +217,95 @@ function paintView() {
     }
   });
 
-  const emJobs = latestData.jobs["Software Engineering Manager"] || [];
-  const tpmJobs = latestData.jobs["Technical Program Manager"] || [];
+  const emJobs = jobsAtOrAboveMin(latestData.jobs["Software Engineering Manager"]);
+  const tpmJobs = jobsAtOrAboveMin(latestData.jobs["Technical Program Manager"]);
   document.getElementById("em-count").textContent = `(${emJobs.length})`;
   document.getElementById("tpm-count").textContent = `(${tpmJobs.length})`;
 
   const statusEl = document.getElementById("live-status");
-  if (statusEl) {
-    statusEl.textContent = latestData.status || (latestData.running ? "Scraping…" : "Idle");
-    statusEl.classList.toggle("done", !latestData.running && !/timed out/i.test(latestData.status || ""));
-    statusEl.classList.toggle("error", /timed out/i.test(latestData.status || ""));
-  }
+  const jobsPanel = document.getElementById("jobs-panel");
+  const resumesPanel = document.getElementById("resumes-panel");
+  const isResumes = currentView === "resumes";
+  jobsPanel.classList.toggle("is-hidden", isResumes);
+  resumesPanel.classList.toggle("is-hidden", !isResumes);
 
-  const jobs = latestData.jobs[view.key] || [];
-  renderTable(jobs, roleIsRunning(latestData, currentView), view.emptyRun);
+  const headerBtn = document.getElementById("fresh-run-btn");
+  headerBtn.classList.toggle("is-hidden", isResumes);
+  const procs = latestData.agent_procs || {};
+  if (!isResumes) {
+    const busy = Boolean(procs[currentView]);
+    headerBtn.disabled = busy;
+    headerBtn.textContent = busy ? "Running…" : "Fresh run";
+  }
+  document.querySelectorAll("[data-run-role]").forEach((button) => {
+    const busy = Boolean(procs[button.dataset.runRole]);
+    button.disabled = busy;
+    const label = button.dataset.runRole === "tpm" ? "TPM" : "EM";
+    button.textContent = busy ? `Running ${label}…` : `Fresh ${label} run`;
+  });
+
+  if (statusEl) {
+    if (isResumes) {
+      statusEl.textContent = "Upload a PDF for each role. Extracted skills are stored in Assets/.";
+      statusEl.classList.remove("done", "error");
+    } else {
+      statusEl.textContent = latestData.status || (latestData.running ? "Scraping…" : "Idle");
+      statusEl.classList.toggle("done", !latestData.running && !/timed out/i.test(latestData.status || ""));
+      statusEl.classList.toggle("error", /timed out/i.test(latestData.status || ""));
+      const jobs = jobsAtOrAboveMin(latestData.jobs[view.key]);
+      renderTable(jobs, roleIsRunning(latestData, currentView) || Boolean(procs[currentView]), view.emptyRun);
+    }
+  }
+}
+
+async function startFreshRun(role) {
+  const response = await fetch(`/api/run?role=${role}`, { method: "POST" });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  latestData.agent_procs = latestData.agent_procs || {};
+  latestData.agent_procs[role] = true;
+  setView(role, true);
+  pullLiveJobs();
+}
+
+function hashForView(viewId) {
+  if (viewId === "tpm") return "#/tpm";
+  if (viewId === "em") return "#/em";
+  return "#/resumes";
 }
 
 function setView(viewId, updateHash) {
-  if (!VIEWS[viewId] || viewId === currentView) {
-    paintView();
+  if (!VIEWS[viewId]) {
     return;
   }
+  if (viewId !== currentView) {
+    lastTableSignature = "";
+  }
   currentView = viewId;
-  lastTableSignature = "";
   if (updateHash) {
-    const hash = viewId === "tpm" ? "#/tpm" : "#/em";
+    const hash = hashForView(viewId);
     if (window.location.hash !== hash) {
       history.replaceState(null, "", hash);
     }
   }
   paintView();
+  if (viewId === "resumes") {
+    refreshResumes();
+  }
 }
 
 function viewFromHash() {
   const hash = (window.location.hash || "").toLowerCase();
-  return hash.includes("tpm") ? "tpm" : "em";
+  if (hash.includes("tpm")) return "tpm";
+  if (hash.includes("em")) return "em";
+  return "resumes";
 }
 
 function renderAll(payload) {
@@ -204,7 +322,7 @@ async function pullLiveJobs() {
     renderAll(await response.json());
   } catch {
     renderAll({
-      status: "Run an agent to get live updates: python BackEnd\\em_agent.py",
+      status: "Run python BackEnd\\ui_server.py or an agent for live updates.",
       running: false,
       jobs: window.JOB_DATA || {},
     });
@@ -220,10 +338,56 @@ document.querySelector(".nav-tabs").addEventListener("click", (event) => {
   setView(button.dataset.view, true);
 });
 
+document.getElementById("fresh-run-btn").addEventListener("click", async () => {
+  if (currentView !== "em" && currentView !== "tpm") {
+    return;
+  }
+  const button = document.getElementById("fresh-run-btn");
+  button.disabled = true;
+  try {
+    await startFreshRun(currentView);
+  } catch (error) {
+    button.disabled = false;
+    const statusEl = document.getElementById("live-status");
+    statusEl.textContent = error.message || "Could not start a fresh run.";
+    statusEl.classList.add("error");
+  }
+});
+
+document.querySelectorAll("[data-run-role]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    try {
+      await startFreshRun(button.dataset.runRole);
+    } catch (error) {
+      const hint = document.getElementById(`${button.dataset.runRole}-resume-hint`);
+      if (hint) {
+        hint.textContent = error.message || "Could not start a fresh run.";
+      }
+    }
+  });
+});
+
+document.getElementById("em-resume-input").addEventListener("change", (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (file) {
+    uploadResume("em", file);
+  }
+  event.target.value = "";
+});
+
+document.getElementById("tpm-resume-input").addEventListener("change", (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (file) {
+    uploadResume("tpm", file);
+  }
+  event.target.value = "";
+});
+
 window.addEventListener("hashchange", () => {
   setView(viewFromHash(), false);
 });
 
 currentView = viewFromHash();
 pullLiveJobs();
+refreshResumes();
 setInterval(pullLiveJobs, 1500);
