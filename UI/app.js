@@ -1,3 +1,28 @@
+const VIEWS = {
+  em: {
+    key: "Software Engineering Manager",
+    title: "Engineering Manager",
+    emptyRun: "python BackEnd\\em_agent.py",
+  },
+  tpm: {
+    key: "Technical Program Manager",
+    title: "Technical Program Manager",
+    emptyRun: "python BackEnd\\tpm_agent.py",
+  },
+};
+
+let currentView = "em";
+let latestData = {
+  status: "",
+  running: false,
+  running_by_role: {},
+  jobs: {
+    "Software Engineering Manager": [],
+    "Technical Program Manager": [],
+  },
+};
+let lastTableSignature = "";
+
 function escapeHtml(text) {
   return String(text ?? "")
     .replaceAll("&", "&amp;")
@@ -23,18 +48,27 @@ function dash(value) {
   return text ? escapeHtml(text) : "—";
 }
 
-function renderTable(containerId, jobs, running) {
-  const root = document.getElementById(containerId);
-  const count = document.getElementById(`${containerId}-count`);
-  if (count) {
-    count.textContent = `(${jobs.length})`;
+function roleIsRunning(data, viewId) {
+  const role = VIEWS[viewId].key;
+  if (data.running_by_role && role in data.running_by_role) {
+    return Boolean(data.running_by_role[role]);
   }
+  return Boolean(data.running);
+}
+
+function renderTable(jobs, running, emptyRun) {
+  const root = document.getElementById("jobs-table");
+  const signature = JSON.stringify({ jobs, running, view: currentView });
+  if (signature === lastTableSignature) {
+    return;
+  }
+  lastTableSignature = signature;
 
   if (!jobs.length) {
     const empty = running
       ? "Waiting for the scraper to find jobs…"
-      : "No jobs saved yet. Run linkedin_agent.py to start the live UI.";
-    root.innerHTML = `<p class="empty">${empty}</p>`;
+      : `No jobs saved yet. Run ${emptyRun}`;
+    root.innerHTML = `<p class="empty">${escapeHtml(empty)}</p>`;
     return;
   }
 
@@ -94,26 +128,71 @@ function normalizePayload(payload) {
     return {
       status: payload.status || "",
       running: Boolean(payload.running),
+      running_by_role: payload.running_by_role || {},
       jobs: payload.jobs,
     };
   }
   return {
     status: "",
     running: false,
+    running_by_role: {},
     jobs: payload || {},
   };
 }
 
-function renderAll(payload) {
-  const data = normalizePayload(payload);
+function paintView() {
+  const view = VIEWS[currentView];
+  document.getElementById("view-title").textContent = view.title;
+  document.querySelectorAll(".nav-tab").forEach((button) => {
+    const active = button.dataset.view === currentView;
+    button.classList.toggle("is-active", active);
+    if (active) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
+  });
+
+  const emJobs = latestData.jobs["Software Engineering Manager"] || [];
+  const tpmJobs = latestData.jobs["Technical Program Manager"] || [];
+  document.getElementById("em-count").textContent = `(${emJobs.length})`;
+  document.getElementById("tpm-count").textContent = `(${tpmJobs.length})`;
+
   const statusEl = document.getElementById("live-status");
   if (statusEl) {
-    statusEl.textContent = data.status || (data.running ? "Scraping…" : "Idle");
-    statusEl.classList.toggle("done", !data.running && !/timed out/i.test(data.status || ""));
-    statusEl.classList.toggle("error", /timed out/i.test(data.status || ""));
+    statusEl.textContent = latestData.status || (latestData.running ? "Scraping…" : "Idle");
+    statusEl.classList.toggle("done", !latestData.running && !/timed out/i.test(latestData.status || ""));
+    statusEl.classList.toggle("error", /timed out/i.test(latestData.status || ""));
   }
-  renderTable("sem-table", data.jobs["Software Engineering Manager"] || [], data.running);
-  renderTable("tpm-table", data.jobs["Technical Program Manager"] || [], data.running);
+
+  const jobs = latestData.jobs[view.key] || [];
+  renderTable(jobs, roleIsRunning(latestData, currentView), view.emptyRun);
+}
+
+function setView(viewId, updateHash) {
+  if (!VIEWS[viewId] || viewId === currentView) {
+    paintView();
+    return;
+  }
+  currentView = viewId;
+  lastTableSignature = "";
+  if (updateHash) {
+    const hash = viewId === "tpm" ? "#/tpm" : "#/em";
+    if (window.location.hash !== hash) {
+      history.replaceState(null, "", hash);
+    }
+  }
+  paintView();
+}
+
+function viewFromHash() {
+  const hash = (window.location.hash || "").toLowerCase();
+  return hash.includes("tpm") ? "tpm" : "em";
+}
+
+function renderAll(payload) {
+  latestData = normalizePayload(payload);
+  paintView();
 }
 
 async function pullLiveJobs() {
@@ -125,12 +204,26 @@ async function pullLiveJobs() {
     renderAll(await response.json());
   } catch {
     renderAll({
-      status: "Open this page from the agent (python linkedin_agent.py) to get live updates.",
+      status: "Run an agent to get live updates: python BackEnd\\em_agent.py",
       running: false,
       jobs: window.JOB_DATA || {},
     });
   }
 }
 
+document.querySelector(".nav-tabs").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-view]");
+  if (!button) {
+    return;
+  }
+  event.preventDefault();
+  setView(button.dataset.view, true);
+});
+
+window.addEventListener("hashchange", () => {
+  setView(viewFromHash(), false);
+});
+
+currentView = viewFromHash();
 pullLiveJobs();
 setInterval(pullLiveJobs, 1500);

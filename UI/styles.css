@@ -21,20 +21,65 @@ body {
   color: var(--text);
 }
 
+.app {
+  min-height: 100vh;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 24px;
+  height: 56px;
+  border-bottom: 1px solid var(--line);
+  background: #121a24;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.brand {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nav-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.nav-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.nav-tab:hover {
+  color: var(--text);
+  background: #1c2736;
+}
+
+.nav-tab.is-active {
+  color: var(--text);
+  background: var(--panel);
+}
+
 .page {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 24px 24px 64px;
 }
 
-h1 {
+.view-title {
   margin: 0 0 8px;
-  font-size: 1.8rem;
-}
-
-.subtitle {
-  margin: 0 0 12px;
-  color: var(--muted);
+  font-size: 1.35rem;
+  font-weight: 700;
 }
 
 .status {
@@ -51,23 +96,11 @@ h1 {
   color: var(--low);
 }
 
-.tables {
-  display: grid;
-  gap: 28px;
-}
-
-section {
+.panel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
-}
-
-section h2 {
-  margin: 0;
-  padding: 16px 20px;
-  font-size: 1.1rem;
-  border-bottom: 1px solid var(--line);
 }
 
 .count {
