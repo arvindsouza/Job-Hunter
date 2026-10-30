@@ -77,7 +77,13 @@ def _parse_json(text: str) -> dict:
     end = cleaned.rfind("}")
     if start == -1 or end == -1 or end <= start:
         raise ValueError("LLM did not return JSON")
-    return json.loads(cleaned[start : end + 1])
+    blob = cleaned[start : end + 1]
+    blob = re.sub(r",\s*([}\]])", r"\1", blob)
+    try:
+        return json.loads(blob)
+    except json.JSONDecodeError:
+        quoted = re.sub(r"([\{,]\s*)([A-Za-z_][\w]*)\s*:", r'\1"\2":', blob)
+        return json.loads(quoted)
 
 
 def _http_json(url: str, payload: dict, headers: dict, timeout: int = 60) -> dict:
@@ -365,25 +371,49 @@ def _write_cached_fit(role: str, title: str, company: str, description: str, res
     )
 
 
-def analyze_tailored_resume_fit(
-    role_label: str,
-    tailored_resume: dict,
-    title: str,
-    company: str,
-    description: str,
-) -> dict:
-    jd = (description or "").strip()[:8000] or "(No job description was available. Judge from the title and company only.)"
-    data = complete_json(
+def _rows_by_id(payload: dict) -> dict[str, dict]:
+    rows = payload.get("jobs") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        rows = [payload] if isinstance(payload, dict) and payload.get("id") else []
+    by_id = {}
+    for row in rows:
+        if isinstance(row, dict) and row.get("id"):
+            by_id[str(row["id"])] = row
+    return by_id
+
+
+def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> list[dict | None]:
+    """Score many tailored-resume/JD pairs in one LLM request."""
+    if not items:
+        return []
+    packed = []
+    for index, item in enumerate(items):
+        tailored = item.get("resume") or {}
+        packed.append(
+            {
+                "id": f"j{index + 1}",
+                "title": item.get("title", ""),
+                "company": item.get("company", ""),
+                "resume": {
+                    "summary": tailored.get("summary"),
+                    "skills": (tailored.get("skills") or [])[:16],
+                    "experience": (tailored.get("experience") or [])[:5],
+                },
+                "description": (item.get("description") or "").strip()[:1800]
+                or "(No job description was available. Judge from the title and company only.)",
+            }
+        )
+    payload = complete_json(
         (
-            "You are a hiring-side career coach. Score one job against a tailored resume "
-            "written for that job. Do not assume facts that are not in the tailored resume. "
-            "Return JSON only."
+            "You are a hiring-side career coach. Score each job against its tailored resume. "
+            "Do not assume facts that are not in that resume. Return JSON only."
         ),
         (
             f"Search role being hunted: {role_label}.\n"
-            f"TAILORED RESUME JSON:\n{json.dumps(tailored_resume, ensure_ascii=False)[:12000]}\n\n"
-            f"JOB TITLE: {title}\nCOMPANY: {company}\nJOB DESCRIPTION:\n{jd}\n\n"
-            "Return JSON with:\n"
+            f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
+            "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
+            "Each object must include:\n"
+            "id (the job id you were given),\n"
             "rating (integer 0-100: 80+ strong apply, 65-79 apply, 50-64 maybe, below 50 skip),\n"
             "decision (apply|maybe|skip),\n"
             "why (one or two sentences on the strongest fit),\n"
@@ -392,11 +422,42 @@ def analyze_tailored_resume_fit(
             "missed (array of JD requirements still weakly evidenced),\n"
             "note (one practical caveat or empty string)."
         ),
-        timeout=120,
+        timeout=180,
     )
-    result = _fit_result_from_payload(data, description)
-    result["reassessed"] = True
-    return result
+    by_id = _rows_by_id(payload)
+    results: list[dict | None] = []
+    for index, item in enumerate(items):
+        row = by_id.get(f"j{index + 1}")
+        if not row:
+            results.append(None)
+            continue
+        fit = _fit_result_from_payload(row, item.get("description", ""))
+        fit["reassessed"] = True
+        results.append(fit)
+    return results
+
+
+def analyze_tailored_resume_fit(
+    role_label: str,
+    tailored_resume: dict,
+    title: str,
+    company: str,
+    description: str,
+) -> dict:
+    results = analyze_tailored_resumes_fit_batch(
+        role_label,
+        [
+            {
+                "resume": tailored_resume,
+                "title": title,
+                "company": company,
+                "description": description,
+            }
+        ],
+    )
+    if results and results[0]:
+        return results[0]
+    raise RuntimeError("LLM returned no re-score for this job")
 
 
 def analyze_job_fit(
@@ -478,13 +539,7 @@ def analyze_jobs_fit_batch(
         ),
         timeout=180,
     )
-    by_id = {}
-    rows = payload.get("jobs") if isinstance(payload, dict) else None
-    if not isinstance(rows, list):
-        rows = [payload] if isinstance(payload, dict) and payload.get("id") else []
-    for row in rows:
-        if isinstance(row, dict) and row.get("id"):
-            by_id[str(row["id"])] = row
+    by_id = _rows_by_id(payload)
 
     for index, job_id, job in pending:
         row = by_id.get(job_id)

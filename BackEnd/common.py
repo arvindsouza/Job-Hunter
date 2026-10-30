@@ -935,8 +935,19 @@ def extract_jobs(page, search_query: str) -> list[dict[str, str]]:
     return jobs
 
 
+def _job_identity(row: dict) -> tuple:
+    link = str(row.get("link") or "").strip()
+    if link and link != "Link not found":
+        return ("link", link)
+    return (
+        "tc",
+        str(row.get("title") or "").strip().lower(),
+        str(row.get("company") or "").strip().lower(),
+    )
+
+
 def job_to_ui_row(job: dict) -> dict:
-    return {
+    row = {
         "title": job.get("title", ""),
         "company": job.get("company", ""),
         "link": job.get("link", ""),
@@ -966,6 +977,9 @@ def job_to_ui_row(job: dict) -> dict:
             if part
         ),
     }
+    if job.get("reassessed"):
+        row["reassessed"] = True
+    return row
 
 
 def write_jobs_snapshot(snapshot: dict) -> None:
@@ -992,7 +1006,9 @@ def update_ui_job_row(role_search: str, title: str, company: str, link: str, upd
             updated = row
             break
         if updated is None:
-            return None
+            updated = {"title": title, "company": company, "link": link, "easy_apply": False}
+            updated.update(updates)
+            rows.append(updated)
         rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
         snapshot["status"] = f"Re-analyzed {title} at {company} with tailored resume"
         write_jobs_snapshot(snapshot)
@@ -1021,16 +1037,32 @@ def read_jobs_file() -> dict:
 
 def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
     """Merge this agent's rows into the shared UI payload without wiping the other role."""
-    rows = []
+    incoming = []
     for job in jobs:
         score = job.get("score")
         if score is not None and score < MIN_RATING:
             continue
-        rows.append(job_to_ui_row(job))
-    rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
+        incoming.append(job_to_ui_row(job))
 
     with UI_STATE_LOCK:
         snapshot = read_jobs_file()
+        previous = snapshot.get("jobs", {}).get(role) or []
+        previous_by_id = {_job_identity(row): row for row in previous}
+        seen: set[tuple] = set()
+        rows = []
+        for row in incoming:
+            key = _job_identity(row)
+            seen.add(key)
+            prior = previous_by_id.get(key)
+            if prior and prior.get("reassessed"):
+                for field in ("rating", "why", "weak_vs_jd", "note", "reassessed"):
+                    if prior.get(field) not in (None, ""):
+                        row[field] = prior[field]
+            rows.append(row)
+        for key, prior in previous_by_id.items():
+            if key not in seen and prior.get("reassessed"):
+                rows.append(prior)
+        rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
         snapshot["jobs"][role] = rows
         running_by_role = snapshot.get("running_by_role") or {}
         running_by_role[role] = running
@@ -1064,7 +1096,14 @@ def start_fresh_run(role_id: str) -> dict:
         return {"ok": False, "error": "A fresh run is already in progress for this role."}
 
     meta = ROLE_META[role_id]
-    publish_ui([], f"{meta['label']}: starting fresh run", True, meta["search"])
+    with UI_STATE_LOCK:
+        snapshot = read_jobs_file()
+        running_by_role = snapshot.get("running_by_role") or {}
+        running_by_role[meta["search"]] = True
+        snapshot["running_by_role"] = running_by_role
+        snapshot["running"] = True
+        snapshot["status"] = f"{meta['label']}: starting fresh run"
+        write_jobs_snapshot(snapshot)
     command = [sys.executable, "-u", str(agent_script_path(role_id))]
     creationflags = 0
     if sys.platform == "win32":
@@ -1113,6 +1152,9 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                 payload = read_jobs_file()
             payload["agent_procs"] = agent_run_status()
             payload["settings"] = load_settings()
+            from orchestrator import chat_snapshot
+
+            payload["chat"] = chat_snapshot()
             self._send_json(payload)
             return
         if path == "/api/settings":
@@ -1219,6 +1261,22 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json({"error": "Could not find this job in the table."}, 400)
                     return
                 result["row"] = updated
+            self._send_json(result, 200 if result.get("ok") else 400)
+            return
+        if parsed.path == "/api/chat":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                self._send_json({"error": "Invalid request"}, 400)
+                return
+            from orchestrator import start_chat_instruction
+
+            result = start_chat_instruction(str(body.get("message") or ""))
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/run":

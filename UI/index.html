@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bengaluru job matches</title>
-    <link rel="stylesheet" href="styles.css?v=reassess" />
+    <link rel="stylesheet" href="styles.css?v=chat2" />
   </head>
   <body>
     <div class="app">
@@ -68,7 +68,31 @@
       </main>
     </div>
 
+    <div id="chat-widget" class="chat-widget">
+      <button type="button" id="chat-toggle" class="chat-toggle" aria-expanded="false" aria-controls="chat-panel">
+        Agent
+      </button>
+      <section id="chat-panel" class="chat-panel" hidden>
+        <header class="chat-header">
+          <div>
+            <p class="chat-title">Job hunt agent</p>
+            <p class="chat-subtitle">Tell it what to find. It routes EM/TPM and updates the tables.</p>
+          </div>
+          <button type="button" id="chat-close" class="chat-close" aria-label="Close chat">×</button>
+        </header>
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="chat-form">
+          <textarea
+            id="chat-input"
+            rows="3"
+            placeholder="Get me 10 strong EM fits this week, tailor the top ones, re-score them, and tell me which to apply to"
+          ></textarea>
+          <button type="submit" id="chat-send" class="chat-send">Send</button>
+        </form>
+      </section>
+    </div>
+
     <script src="jobs-data.js"></script>
-    <script src="app.js?v=reassess"></script>
+    <script src="app.js?v=chat2"></script>
   </body>
 </html>

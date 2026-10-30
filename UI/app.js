@@ -26,6 +26,8 @@ let latestData = {
   },
 };
 let lastTableSignature = "";
+let lastChatSignature = "";
+let chatOpen = false;
 let currentTimeRange = "week";
 let currentMaxPulls = 50;
 
@@ -174,6 +176,7 @@ function normalizePayload(payload) {
       agent_procs: payload.agent_procs || { em: false, tpm: false },
       settings: { time_range: timeRange, max_pulls: pulls },
       jobs: payload.jobs,
+      chat: payload.chat || { running: false, messages: [], focus_role: null },
     };
   }
   return {
@@ -183,6 +186,7 @@ function normalizePayload(payload) {
     agent_procs: { em: false, tpm: false },
     settings: { time_range: timeRange, max_pulls: pulls },
     jobs: payload || {},
+    chat: { running: false, messages: [], focus_role: null },
   };
 }
 
@@ -316,6 +320,82 @@ function paintView() {
       renderTable(jobs, roleIsRunning(latestData, currentView) || Boolean(procs[currentView]), view.emptyRun);
     }
   }
+  paintChat();
+}
+
+function setChatOpen(open) {
+  chatOpen = Boolean(open);
+  const panel = document.getElementById("chat-panel");
+  const toggle = document.getElementById("chat-toggle");
+  panel.hidden = !chatOpen;
+  toggle.classList.toggle("is-open", chatOpen);
+  toggle.setAttribute("aria-expanded", chatOpen ? "true" : "false");
+  if (chatOpen) {
+    lastChatSignature = "";
+    paintChat();
+    document.getElementById("chat-input").focus();
+  }
+}
+
+function paintChat() {
+  const chat = latestData.chat || { running: false, messages: [] };
+  const send = document.getElementById("chat-send");
+  send.disabled = Boolean(chat.running);
+  send.textContent = chat.running ? "Working…" : "Send";
+  const messages = chat.messages || [];
+  const signature = JSON.stringify({ open: chatOpen, running: chat.running, messages });
+  if (signature === lastChatSignature) {
+    return;
+  }
+  lastChatSignature = signature;
+  const log = document.getElementById("chat-log");
+  if (!messages.length) {
+    log.innerHTML = `<p class="chat-empty">Ask in plain English. Example: get 10 strong EM fits this week, tailor the top ones, re-score them, and tell me which to apply to. TPM requests go to the TPM agent.</p>`;
+    return;
+  }
+  log.innerHTML = messages
+    .map(
+      (item) =>
+        `<div class="chat-bubble ${item.role === "user" ? "user" : "assistant"}">${escapeHtml(item.text || "")}</div>`
+    )
+    .join("");
+  log.scrollTop = log.scrollHeight;
+}
+
+function maybeFocusChatRole() {
+  const chat = latestData.chat || {};
+  const role = chat.focus_role;
+  if (!chat.running || (role !== "em" && role !== "tpm")) {
+    return;
+  }
+  if (currentView === "resumes") {
+    setView(role, true);
+  }
+}
+
+async function sendChatMessage(text) {
+  const statusEl = document.getElementById("live-status");
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: text }),
+  });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok || payload.ok === false) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  if (payload.chat) {
+    latestData.chat = payload.chat;
+    lastChatSignature = "";
+    paintChat();
+  }
+  statusEl.classList.remove("error");
+  pullLiveJobs();
 }
 
 async function startFreshRun(role) {
@@ -371,6 +451,7 @@ function viewFromHash() {
 function renderAll(payload) {
   latestData = normalizePayload(payload);
   paintView();
+  maybeFocusChatRole();
 }
 
 async function pullLiveJobs() {
@@ -575,6 +656,43 @@ document.getElementById("tpm-resume-input").addEventListener("change", (event) =
     uploadResume("tpm", file);
   }
   event.target.value = "";
+});
+
+document.getElementById("chat-toggle").addEventListener("click", () => {
+  setChatOpen(!chatOpen);
+});
+
+document.getElementById("chat-close").addEventListener("click", () => {
+  setChatOpen(false);
+});
+
+document.getElementById("chat-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text || (latestData.chat && latestData.chat.running)) {
+    return;
+  }
+  setChatOpen(true);
+  try {
+    await sendChatMessage(text);
+    input.value = "";
+  } catch (error) {
+    latestData.chat = latestData.chat || { messages: [] };
+    latestData.chat.messages = (latestData.chat.messages || []).concat({
+      role: "assistant",
+      text: error.message || "Could not start that instruction.",
+    });
+    lastChatSignature = "";
+    paintChat();
+  }
+});
+
+document.getElementById("chat-input").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    document.getElementById("chat-form").requestSubmit();
+  }
 });
 
 window.addEventListener("hashchange", () => {
