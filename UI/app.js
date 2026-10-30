@@ -27,6 +27,7 @@ let latestData = {
 };
 let lastTableSignature = "";
 let currentTimeRange = "week";
+let currentMaxPulls = 50;
 
 function escapeHtml(text) {
   return String(text ?? "")
@@ -139,13 +140,15 @@ function renderTable(jobs, running, emptyRun) {
 function normalizePayload(payload) {
   const settings = (payload && payload.settings) || {};
   const timeRange = settings.time_range === "24h" ? "24h" : "week";
+  const maxPulls = Number(settings.max_pulls);
+  const pulls = Number.isFinite(maxPulls) ? Math.max(5, Math.min(200, Math.round(maxPulls))) : 50;
   if (payload && payload.jobs) {
     return {
       status: payload.status || "",
       running: Boolean(payload.running),
       running_by_role: payload.running_by_role || {},
       agent_procs: payload.agent_procs || { em: false, tpm: false },
-      settings: { time_range: timeRange },
+      settings: { time_range: timeRange, max_pulls: pulls },
       jobs: payload.jobs,
     };
   }
@@ -154,7 +157,7 @@ function normalizePayload(payload) {
     running: false,
     running_by_role: {},
     agent_procs: { em: false, tpm: false },
-    settings: { time_range: timeRange },
+    settings: { time_range: timeRange, max_pulls: pulls },
     jobs: payload || {},
   };
 }
@@ -166,6 +169,14 @@ function paintTimeRange(timeRange) {
   });
 }
 
+function paintMaxPulls(value) {
+  currentMaxPulls = Number.isFinite(Number(value)) ? Math.max(5, Math.min(200, Math.round(Number(value)))) : 50;
+  const input = document.getElementById("max-pulls");
+  if (input && document.activeElement !== input) {
+    input.value = String(currentMaxPulls);
+  }
+}
+
 function paintResumeCard(role, summary) {
   const meta = document.getElementById(`${role}-resume-meta`);
   const list = document.getElementById(`${role}-skill-list`);
@@ -174,10 +185,18 @@ function paintResumeCard(role, summary) {
     list.innerHTML = "";
     return;
   }
-  meta.textContent = `${summary.filename} · ${summary.skill_count} skill(s) extracted`;
-  list.innerHTML = (summary.skills || [])
+  const mode = summary.llm ? "LLM context saved in Assets" : "keyword extract only";
+  meta.textContent = `${summary.filename} · ${mode}`;
+  const summaryHtml = summary.summary
+    ? `<li class="resume-summary">${escapeHtml(summary.summary)}</li>`
+    : "";
+  const skillsHtml = (summary.skills || [])
     .map((skill) => `<li>${escapeHtml(skill)}</li>`)
     .join("");
+  list.innerHTML = summaryHtml + skillsHtml;
+  if (summary.llm_error && !summary.llm) {
+    document.getElementById(`${role}-resume-hint`).textContent = summary.llm_error;
+  }
 }
 
 async function refreshResumes() {
@@ -197,7 +216,7 @@ async function refreshResumes() {
 
 async function uploadResume(role, file) {
   const hint = document.getElementById(`${role}-resume-hint`);
-  hint.textContent = "Extracting skills…";
+  hint.textContent = "Reading resume and building LLM context…";
   try {
     const response = await fetch(`/api/resume?role=${role}`, {
       method: "POST",
@@ -232,6 +251,7 @@ function paintView() {
   });
 
   paintTimeRange((latestData.settings && latestData.settings.time_range) || currentTimeRange);
+  paintMaxPulls((latestData.settings && latestData.settings.max_pulls) || currentMaxPulls);
 
   const emJobs = jobsAtOrAboveMin(latestData.jobs["Software Engineering Manager"]);
   const tpmJobs = jobsAtOrAboveMin(latestData.jobs["Technical Program Manager"]);
@@ -350,7 +370,7 @@ async function setTimeRange(timeRange) {
   const response = await fetch("/api/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ time_range: currentTimeRange }),
+    body: JSON.stringify({ time_range: currentTimeRange, max_pulls: currentMaxPulls }),
   });
   let payload = {};
   try {
@@ -362,7 +382,37 @@ async function setTimeRange(timeRange) {
     throw new Error(payload.error || `HTTP ${response.status}`);
   }
   paintTimeRange(payload.time_range || currentTimeRange);
+  paintMaxPulls(payload.max_pulls ?? currentMaxPulls);
 }
+
+async function setMaxPulls(value) {
+  paintMaxPulls(value);
+  const response = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ max_pulls: currentMaxPulls }),
+  });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  paintMaxPulls(payload.max_pulls ?? currentMaxPulls);
+}
+
+document.getElementById("max-pulls").addEventListener("change", async (event) => {
+  try {
+    await setMaxPulls(event.target.value);
+  } catch (error) {
+    const statusEl = document.getElementById("live-status");
+    statusEl.textContent = error.message || "Could not save max pulls.";
+    statusEl.classList.add("error");
+  }
+});
 
 document.querySelector(".nav-range").addEventListener("click", async (event) => {
   const button = event.target.closest("[data-time-range]");

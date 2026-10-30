@@ -21,10 +21,12 @@
             TPM <span id="tpm-count" class="count">(0)</span>
           </button>
         </nav>
-        <div class="nav-range" role="group" aria-label="Job posted time range">
+        <div class="nav-range" role="group" aria-label="Search options">
           <span class="nav-range-label">Posted</span>
           <button type="button" class="range-btn" data-time-range="24h">24 hours</button>
           <button type="button" class="range-btn is-active" data-time-range="week">1 week</button>
+          <label class="nav-range-label" for="max-pulls">Max pulls</label>
+          <input id="max-pulls" class="max-pulls-input" type="number" min="5" max="200" value="50" />
         </div>
       </header>
 

@@ -10,10 +10,16 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
+from llm import analyze_resume, load_context, llm_available
+
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ASSETS_DIR = PROJECT_ROOT / "Assets"
 
 ROLE_FOLDERS = {"em": "em", "tpm": "tpm"}
+ROLE_LABELS = {
+    "em": "Engineering Manager",
+    "tpm": "Technical Program Manager",
+}
 
 SECTION_START = re.compile(
     r"(core competencies|technical skills|skills|competencies)\b",
@@ -185,6 +191,15 @@ def save_resume(role: str, data: bytes, filename: str) -> dict:
     text = pdf_bytes_to_text(data)
     (folder / "resume.txt").write_text(text, encoding="utf-8")
     skills = parse_skill_lines(text)
+    llm_error = ""
+    if llm_available():
+        try:
+            context = analyze_resume(role, text, ROLE_LABELS.get(role, role))
+            llm_skills = [str(item) for item in (context.get("tech_stack") or []) if str(item).strip()]
+            if llm_skills:
+                skills = llm_skills
+        except Exception as exc:
+            llm_error = str(exc)
     profile = {
         "role": role,
         "source_filename": safe_name,
@@ -192,6 +207,7 @@ def save_resume(role: str, data: bytes, filename: str) -> dict:
         "skills": skills,
         "skill_groups": build_skill_groups(skills),
         "gap_signals": gap_signals_for_resume(text),
+        "llm_error": llm_error,
     }
     (folder / "profile.json").write_text(json.dumps(profile, indent=2), encoding="utf-8")
     return profile_summary(role)
@@ -203,13 +219,19 @@ def profile_summary(role: str) -> dict:
     if not profile_path.exists():
         return {"role": role, "uploaded": False}
     profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    context = load_context(role) or {}
+    skills = context.get("tech_stack") or profile.get("skills", [])
     return {
         "role": role,
         "uploaded": True,
         "filename": profile.get("source_filename", "resume.pdf"),
         "extracted_at": profile.get("extracted_at"),
-        "skills": profile.get("skills", []),
-        "skill_count": len(profile.get("skills", [])),
+        "skills": skills,
+        "skill_count": len(skills),
+        "summary": context.get("summary") or "",
+        "current_level": context.get("current_level") or "",
+        "llm": context.get("method") == "llm",
+        "llm_error": context.get("error") or profile.get("llm_error") or "",
     }
 
 

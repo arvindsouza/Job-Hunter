@@ -20,7 +20,17 @@ from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
+from llm import (
+    analyze_job_fit,
+    analyze_jobs_fit_batch,
+    ensure_resume_context,
+    llm_available,
+    llm_provider_name,
+    load_env,
+)
 from resume_extract import list_resume_summaries, load_profile, save_resume
+
+load_env()
 
 SEM_SEARCH = "Software Engineering Manager"
 TPM_SEARCH = "Technical Program Manager"
@@ -32,6 +42,9 @@ ASSETS_DIR = PROJECT_ROOT / "Assets"
 BACKEND_DIR = Path(__file__).resolve().parent
 SETTINGS_PATH = UI_DIR / "settings.json"
 DEFAULT_TIME_RANGE = "week"
+DEFAULT_MAX_PULLS = 50
+MIN_MAX_PULLS = 5
+MAX_MAX_PULLS = 200
 TIME_RANGE_SECONDS = {
     "24h": 86400,
     "week": 604800,
@@ -115,35 +128,40 @@ ROLE_META = {
 
 
 def load_agent_config(role_id: str) -> dict | None:
-    """Build a scoring config from Assets/<role>/profile.json. None if not uploaded."""
+    """Build a scoring config from Assets/<role>. None if no resume is uploaded."""
     if role_id not in ROLE_META:
         raise ValueError("role_id must be em or tpm")
-    profile = load_profile(role_id)
-    if not profile:
+    resume_txt = ASSETS_DIR / role_id / "resume.txt"
+    if not resume_txt.exists():
         return None
-    groups = profile.get("skill_groups") or []
-    if not groups:
-        return None
-    gaps = [tuple(item) for item in profile.get("gap_signals") or [] if len(item) == 2]
+    profile = load_profile(role_id) or {}
     meta = ROLE_META[role_id]
+    try:
+        context = ensure_resume_context(role_id, meta["label"]) or {}
+    except Exception as exc:
+        context = {"method": "none", "summary": "", "error": str(exc)}
+    groups = profile.get("skill_groups") or []
+    gaps = [tuple(item) for item in profile.get("gap_signals") or [] if len(item) == 2]
     return {
+        "role_id": role_id,
         "search": meta["search"],
         "label": meta["label"],
         "title_fit_fn": meta["title_fit_fn"],
         "skill_groups": groups,
         "gap_signals": gaps,
+        "context": context,
         "resume_path": str(ASSETS_DIR / role_id / "resume.pdf"),
         "source_filename": profile.get("source_filename", "resume.pdf"),
     }
 
 
-def score_job(title: str, description: str, config: dict) -> dict:
+def score_job_keywords(title: str, description: str, config: dict) -> dict:
     blob = f"{title}\n{description}".lower()
     title_points, title_note = config["title_fit_fn"](title)
     matched: list[str] = []
     missed: list[str] = []
     skill_points = 0
-    skill_groups = config["skill_groups"]
+    skill_groups = config.get("skill_groups") or []
     skill_max = sum(group["weight"] for group in skill_groups)
 
     for group in skill_groups:
@@ -172,7 +190,54 @@ def score_job(title: str, description: str, config: dict) -> dict:
         "missed": missed,
         "jd_gaps": gaps,
         "had_description": bool(description.strip()),
+        "why": title_note,
+        "reasoning": "",
+        "note": "",
+        "method": "keywords",
     }
+
+
+def score_job(job: dict, description: str, config: dict) -> dict:
+    context = config.get("context") or {}
+    if llm_available() and context.get("method") == "llm" and context.get("summary"):
+        try:
+            return analyze_job_fit(
+                config["role_id"],
+                config["label"],
+                context,
+                job.get("title", ""),
+                job.get("company", ""),
+                description,
+            )
+        except Exception as exc:
+            fallback = score_job_keywords(job.get("title", ""), description, config)
+            fallback["note"] = f"LLM scoring failed ({exc}); used keyword fallback."
+            return fallback
+    return score_job_keywords(job.get("title", ""), description, config)
+
+
+def score_jobs(jobs: list[dict], config: dict) -> None:
+    context = config.get("context") or {}
+    use_llm = llm_available() and context.get("method") == "llm" and context.get("summary")
+    llm_results: list[dict | None] = [None] * len(jobs)
+    if use_llm:
+        try:
+            llm_results = analyze_jobs_fit_batch(
+                config["role_id"],
+                config["label"],
+                context,
+                jobs,
+            )
+        except Exception:
+            llm_results = [None] * len(jobs)
+    for index, job in enumerate(jobs):
+        result = llm_results[index] if index < len(llm_results) else None
+        if result:
+            job.update(result)
+        else:
+            fallback = score_job_keywords(job.get("title", ""), job.get("description", ""), config)
+            fallback["note"] = "Missing from batch LLM response; used keyword fallback."
+            job.update(fallback)
 
 
 CHROME_PROFILE_ROOT = PROJECT_ROOT / ".chrome-profile"
@@ -442,13 +507,16 @@ def instahyre_in_bangalore(locations: str) -> bool:
     return "bangalore" in text or "bengaluru" in text
 
 
-def extract_instahyre_jobs(role_id: str, title_fit_fn) -> list[dict[str, str]]:
+def extract_instahyre_jobs(role_id: str, title_fit_fn, limit: int | None = None) -> list[dict[str, str]]:
     skill = INSTAHYRE_SKILLS.get(role_id, "")
     search_query = ROLE_META[role_id]["search"]
     jobs: list[dict[str, str]] = []
     offset = 0
     pages = 0
-    while pages < 12 and len(jobs) < 50:
+    limit = max_pulls() if limit is None else max(0, int(limit))
+    if limit == 0:
+        return jobs
+    while pages < 12 and len(jobs) < limit:
         query = urllib.parse.urlencode({"skills": skill, "offset": offset, "limit": 35})
         try:
             payload = json.loads(http_get(f"{INSTAHYRE_API}?{query}").decode("utf-8", errors="replace"))
@@ -477,7 +545,7 @@ def extract_instahyre_jobs(role_id: str, title_fit_fn) -> list[dict[str, str]]:
                     "source": "Instahyre",
                 }
             )
-            if len(jobs) >= 50:
+            if len(jobs) >= limit:
                 break
         pages += 1
         if len(objects) < 35:
@@ -575,20 +643,21 @@ def fetch_job_details(page, url: str) -> dict:
 
 
 def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
-    scored: list[dict] = []
+    ready: list[dict] = []
     total = len(jobs)
     for index, job in enumerate(jobs, start=1):
-        publish_ui(scored, f"{config['label']}: scoring ({index}/{total})", True, config["search"])
+        publish_ui(ready, f"{config['label']}: fetching JDs ({index}/{total})", True, config["search"])
         details = fetch_job_details(page, job["link"])
         if not posted_in_selected_range(details.get("posted_at"), job.get("source")):
             continue
         job["description"] = details["description"]
         job["apply_url"] = details["apply_url"]
         job["easy_apply"] = details["easy_apply"]
-        job.update(score_job(job["title"], details["description"], config))
-        scored.append(job)
-        publish_ui(scored, f"{config['label']}: scored ({index}/{total})", True, config["search"])
-    jobs[:] = scored
+        ready.append(job)
+    publish_ui(ready, f"{config['label']}: scoring {len(ready)} jobs in one LLM request", True, config["search"])
+    score_jobs(ready, config)
+    publish_ui(ready, f"{config['label']}: scored {len(ready)} jobs", True, config["search"])
+    jobs[:] = ready
 
 
 def normalize_time_range(value: str | None) -> str:
@@ -598,7 +667,19 @@ def normalize_time_range(value: str | None) -> str:
 
 
 def default_settings() -> dict:
-    return {"time_range": DEFAULT_TIME_RANGE}
+    return {"time_range": DEFAULT_TIME_RANGE, "max_pulls": DEFAULT_MAX_PULLS}
+
+
+def normalize_max_pulls(value) -> int:
+    try:
+        pulls = int(value)
+    except (TypeError, ValueError):
+        return DEFAULT_MAX_PULLS
+    return max(MIN_MAX_PULLS, min(MAX_MAX_PULLS, pulls))
+
+
+def max_pulls() -> int:
+    return load_settings()["max_pulls"]
 
 
 def load_settings() -> dict:
@@ -610,7 +691,10 @@ def load_settings() -> dict:
         return default_settings()
     if not isinstance(data, dict):
         return default_settings()
-    return {"time_range": normalize_time_range(data.get("time_range"))}
+    return {
+        "time_range": normalize_time_range(data.get("time_range")),
+        "max_pulls": normalize_max_pulls(data.get("max_pulls", DEFAULT_MAX_PULLS)),
+    }
 
 
 def save_settings(updates: dict) -> dict:
@@ -618,6 +702,8 @@ def save_settings(updates: dict) -> dict:
         settings = load_settings()
         if "time_range" in updates:
             settings["time_range"] = normalize_time_range(updates.get("time_range"))
+        if "max_pulls" in updates:
+            settings["max_pulls"] = normalize_max_pulls(updates.get("max_pulls"))
         SETTINGS_PATH.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
         return settings
 
@@ -635,12 +721,15 @@ def build_search_url(job_title: str) -> str:
     )
 
 
-def extract_linkedin_guest_jobs(search_query: str) -> list[dict[str, str]]:
+def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> list[dict[str, str]]:
     """Public LinkedIn job cards; works without a logged-in Chrome session."""
     seconds = TIME_RANGE_SECONDS[load_settings()["time_range"]]
+    limit = max_pulls() if limit is None else max(0, int(limit))
     jobs: list[dict[str, str]] = []
+    if limit == 0:
+        return jobs
     seen: set[str] = set()
-    for start in range(0, 75, 25):
+    for start in range(0, limit + 25, 25):
         url = (
             "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
             f"?keywords={quote(search_query)}"
@@ -692,6 +781,8 @@ def extract_linkedin_guest_jobs(search_query: str) -> list[dict[str, str]]:
                 }
             )
             page_count += 1
+            if len(jobs) >= limit:
+                return jobs
         if page_count == 0:
             break
     return jobs
@@ -848,7 +939,9 @@ def job_to_ui_row(job: dict) -> dict:
         "link": job.get("link", ""),
         "easy_apply": bool(job.get("easy_apply")),
         "rating": job.get("score"),
-        "why": " | ".join(
+        "why": job.get("reasoning")
+        or job.get("why")
+        or " | ".join(
             part
             for part in [
                 job.get("title_note", ""),
@@ -861,10 +954,11 @@ def job_to_ui_row(job: dict) -> dict:
             part
             for part in [
                 job.get("source", ""),
+                job.get("note", ""),
                 (
                     "JD was hidden (login wall). Score used the title only."
-                    if job.get("had_description") is False
-                    else (f"JD asks extra: {', '.join(job['jd_gaps'])}" if job.get("jd_gaps") else "")
+                    if job.get("had_description") is False and not job.get("reasoning")
+                    else (f"JD asks extra: {', '.join(job['jd_gaps'])}" if job.get("jd_gaps") and job.get("method") == "keywords" else "")
                 ),
             ]
             if part
@@ -1021,6 +1115,12 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             if "time_range" in body and body["time_range"] not in TIME_RANGE_SECONDS:
                 self._send_json({"error": "time_range must be 24h or week"}, 400)
                 return
+            if "max_pulls" in body:
+                try:
+                    int(body["max_pulls"])
+                except (TypeError, ValueError):
+                    self._send_json({"error": "max_pulls must be a number"}, 400)
+                    return
             self._send_json(save_settings(body))
             return
         if parsed.path == "/api/run":
@@ -1106,6 +1206,13 @@ def run_agent(role_id: str) -> int:
         return 1
 
     print(f"Resume: {config['source_filename']}")
+    context = config.get("context") or {}
+    if context.get("method") == "llm":
+        print(f"Resume context: Assets/{config['role_id']}/context.json ({llm_provider_name()})")
+    elif not llm_available():
+        print("No LLM API key; scoring will use keywords. Add GROQ_API_KEY or GEMINI_API_KEY to .env")
+    elif context.get("error"):
+        print(f"Resume context error: {context['error']}")
     if started_server:
         open_in_chrome(ui_url + ("#/tpm" if role_id == "tpm" else "#/em"))
     else:
@@ -1126,10 +1233,13 @@ def run_agent(role_id: str) -> int:
         page = context.pages[0] if context.pages else context.new_page()
         found: list[dict] = []
         seen: set[str] = set()
+        pull_limit = max_pulls()
         try:
-            publish_ui(found, f"{label}: searching LinkedIn", True, role)
+            publish_ui(found, f"{label}: searching LinkedIn (max {pull_limit})", True, role)
             try:
-                for job in extract_linkedin_guest_jobs(role):
+                for job in extract_linkedin_guest_jobs(role, pull_limit):
+                    if len(found) >= pull_limit:
+                        break
                     key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
                     if key in seen:
                         continue
@@ -1143,6 +1253,8 @@ def run_agent(role_id: str) -> int:
                 page.goto(build_search_url(role), wait_until="domcontentloaded", timeout=20000)
                 dismiss_cookie_banner(page)
                 for job in extract_jobs(page, role):
+                    if len(found) >= pull_limit:
+                        break
                     key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
                     if key in seen:
                         continue
@@ -1155,7 +1267,10 @@ def run_agent(role_id: str) -> int:
 
             publish_ui(found, f"{label}: searching Instahyre", True, role)
             try:
-                for job in extract_instahyre_jobs(role_id, config["title_fit_fn"]):
+                remaining = max(0, pull_limit - len(found))
+                for job in extract_instahyre_jobs(role_id, config["title_fit_fn"], remaining or 0):
+                    if len(found) >= pull_limit:
+                        break
                     key = job["link"] if job["link"] != "Link not found" else f"instahyre|{job['title']}|{job['company']}"
                     if key in seen:
                         continue
