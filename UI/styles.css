@@ -306,8 +306,21 @@ tr:last-child td {
   overflow-wrap: anywhere;
 }
 
-.col-tailor {
+.col-tailor,
+.col-reassess {
   white-space: nowrap;
+}
+
+.col-reassess {
+  min-width: 110px;
+}
+
+.reassessed-tag {
+  display: block;
+  margin-top: 6px;
+  color: var(--good);
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .job-title {

@@ -8,7 +8,7 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-from llm import complete_json, load_context, llm_available
+from llm import analyze_tailored_resume_fit, complete_json, load_context, llm_available
 from resume_extract import ROLE_LABELS, ASSETS_DIR
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -175,9 +175,58 @@ def tailor_resume_pdf(role: str, title: str, company: str, description: str) -> 
         return {"ok": False, "error": "LLM did not return a usable resume."}
     pdf_path = results_pdf_path(company, title)
     write_resume_pdf(pdf_path, data)
+    pdf_path.with_suffix(".json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     return {
         "ok": True,
         "filename": pdf_path.name,
         "path": str(pdf_path),
         "folder": str(RESULTS_DIR),
+    }
+
+
+def load_tailored_resume(company: str, title: str) -> dict | None:
+    path = results_pdf_path(company, title).with_suffix(".json")
+    if not path.exists():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def reassess_with_tailored_resume(role: str, title: str, company: str, description: str) -> dict:
+    if role not in ROLE_LABELS:
+        return {"ok": False, "error": "role must be em or tpm"}
+    if not llm_available():
+        return {"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"}
+    tailored = load_tailored_resume(company, title)
+    if not tailored:
+        return {"ok": False, "error": "Tailor the resume for this job first."}
+    fit = analyze_tailored_resume_fit(
+        ROLE_LABELS[role],
+        tailored,
+        title,
+        company,
+        description,
+    )
+    pdf_name = results_pdf_path(company, title).name
+    note = " | ".join(
+        part
+        for part in [
+            (fit.get("note") or "").strip(),
+            f"Re-analyzed with tailored resume ({pdf_name})",
+        ]
+        if part
+    )
+    return {
+        "ok": True,
+        "filename": pdf_name,
+        "row": {
+            "rating": fit.get("score"),
+            "why": fit.get("reasoning") or fit.get("why") or "",
+            "weak_vs_jd": ", ".join((fit.get("missed") or [])[:6]),
+            "note": note,
+            "reassessed": True,
+        },
     }

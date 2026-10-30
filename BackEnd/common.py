@@ -29,7 +29,7 @@ from llm import (
     load_env,
 )
 from resume_extract import list_resume_summaries, load_profile, save_resume
-from resume_tailor import tailor_resume_pdf
+from resume_tailor import load_tailored_resume, reassess_with_tailored_resume, tailor_resume_pdf
 
 load_env()
 
@@ -968,6 +968,37 @@ def job_to_ui_row(job: dict) -> dict:
     }
 
 
+def write_jobs_snapshot(snapshot: dict) -> None:
+    UI_DIR.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(snapshot, indent=2)
+    (UI_DIR / "jobs.json").write_text(payload, encoding="utf-8")
+    (UI_DIR / "jobs-data.js").write_text(
+        "window.JOB_DATA = " + json.dumps(snapshot.get("jobs") or {}, indent=2) + ";\n",
+        encoding="utf-8",
+    )
+
+
+def update_ui_job_row(role_search: str, title: str, company: str, link: str, updates: dict) -> dict | None:
+    with UI_STATE_LOCK:
+        snapshot = read_jobs_file()
+        rows = snapshot.get("jobs", {}).get(role_search) or []
+        updated = None
+        for row in rows:
+            if row.get("title") != title or row.get("company") != company:
+                continue
+            if link and row.get("link") and row.get("link") != link:
+                continue
+            row.update(updates)
+            updated = row
+            break
+        if updated is None:
+            return None
+        rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
+        snapshot["status"] = f"Re-analyzed {title} at {company} with tailored resume"
+        write_jobs_snapshot(snapshot)
+        return updated
+
+
 def empty_jobs() -> dict[str, list]:
     return {role: [] for role in ALL_ROLES}
 
@@ -1006,13 +1037,7 @@ def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
         snapshot["running_by_role"] = running_by_role
         snapshot["running"] = any(running_by_role.values())
         snapshot["status"] = status
-        UI_DIR.mkdir(parents=True, exist_ok=True)
-        payload = json.dumps(snapshot, indent=2)
-        (UI_DIR / "jobs.json").write_text(payload, encoding="utf-8")
-        (UI_DIR / "jobs-data.js").write_text(
-            "window.JOB_DATA = " + json.dumps(snapshot["jobs"], indent=2) + ";\n",
-            encoding="utf-8",
-        )
+        write_jobs_snapshot(snapshot)
 
 
 def agent_script_path(role_id: str) -> Path:
@@ -1152,6 +1177,48 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             except Exception as exc:
                 self._send_json({"error": str(exc)}, 400)
                 return
+            self._send_json(result, 200 if result.get("ok") else 400)
+            return
+        if parsed.path == "/api/reassess":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                self._send_json({"error": "Invalid request"}, 400)
+                return
+            role = str(body.get("role") or "").lower()
+            title = str(body.get("title") or "").strip()
+            company = str(body.get("company") or "").strip()
+            link = str(body.get("link") or "").strip()
+            if role not in ROLE_META:
+                self._send_json({"error": "role must be em or tpm"}, 400)
+                return
+            if not title or not company:
+                self._send_json({"error": "title and company are required"}, 400)
+                return
+            if not load_tailored_resume(company, title):
+                self._send_json({"error": "Tailor the resume for this job first."}, 400)
+                return
+            details = fetch_job_details(None, link)
+            try:
+                result = reassess_with_tailored_resume(
+                    role, title, company, details.get("description") or ""
+                )
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, 400)
+                return
+            if result.get("ok"):
+                updated = update_ui_job_row(
+                    ROLE_META[role]["search"], title, company, link, result["row"]
+                )
+                if updated is None:
+                    self._send_json({"error": "Could not find this job in the table."}, 400)
+                    return
+                result["row"] = updated
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/run":

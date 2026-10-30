@@ -57,7 +57,10 @@ function dash(value) {
 const MIN_RATING = 50;
 
 function jobsAtOrAboveMin(jobs) {
-  return (jobs || []).filter((job) => job.rating == null || job.rating === "" || job.rating >= MIN_RATING);
+  return (jobs || []).filter(
+    (job) =>
+      job.reassessed || job.rating == null || job.rating === "" || job.rating >= MIN_RATING
+  );
 }
 
 function roleIsRunning(data, viewId) {
@@ -118,6 +121,16 @@ function renderTable(jobs, running, emptyRun) {
               data-link="${escapeHtml(job.link || "")}"
             >Tailor resume</button>
           </td>
+          <td class="col-reassess">
+            <button
+              type="button"
+              class="tailor-btn reassess-btn"
+              data-title="${escapeHtml(job.title || "")}"
+              data-company="${escapeHtml(job.company || "")}"
+              data-link="${escapeHtml(job.link || "")}"
+            >Re-assess</button>
+            ${job.reassessed ? '<span class="reassessed-tag">Re-analyzed</span>' : ""}
+          </td>
           <td class="col-why">${dash(job.why)}</td>
           <td class="col-weak">${dash(job.weak_vs_jd)}</td>
           <td class="col-note">${dash(job.note)}</td>
@@ -136,6 +149,7 @@ function renderTable(jobs, running, emptyRun) {
             <th class="col-link">Link</th>
             <th class="col-rating">Rating</th>
             <th class="col-tailor">Resume</th>
+            <th class="col-reassess">Re-assess</th>
             <th class="col-why">Why</th>
             <th class="col-weak">Weak vs JD</th>
             <th class="col-note">Note</th>
@@ -447,40 +461,70 @@ document.querySelector(".nav-tabs").addEventListener("click", (event) => {
   setView(button.dataset.view, true);
 });
 
+async function postJobAction(path, button) {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      role: currentView,
+      title: button.dataset.title || "",
+      company: button.dataset.company || "",
+      link: button.dataset.link || "",
+    }),
+  });
+  let payload = {};
+  try {
+    payload = await response.json();
+  } catch {
+    payload = {};
+  }
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.error || `HTTP ${response.status}`);
+  }
+  return payload;
+}
+
 document.getElementById("jobs-table").addEventListener("click", async (event) => {
-  const button = event.target.closest(".tailor-btn");
-  if (!button || (currentView !== "em" && currentView !== "tpm")) {
+  if (currentView !== "em" && currentView !== "tpm") {
+    return;
+  }
+  const reassessBtn = event.target.closest(".reassess-btn");
+  const tailorBtn = event.target.closest(".tailor-btn");
+  const button = reassessBtn || (tailorBtn && !tailorBtn.classList.contains("reassess-btn") ? tailorBtn : null);
+  if (!button) {
     return;
   }
   const statusEl = document.getElementById("live-status");
+  const isReassess = Boolean(reassessBtn);
   button.disabled = true;
   const original = button.textContent;
-  button.textContent = "Tailoring…";
+  button.textContent = isReassess ? "Re-analyzing…" : "Tailoring…";
   try {
-    const response = await fetch("/api/tailor", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        role: currentView,
-        title: button.dataset.title || "",
-        company: button.dataset.company || "",
-        link: button.dataset.link || "",
-      }),
-    });
-    let payload = {};
-    try {
-      payload = await response.json();
-    } catch {
-      payload = {};
+    const payload = await postJobAction(isReassess ? "/api/reassess" : "/api/tailor", button);
+    if (isReassess && payload.row) {
+      const key = VIEWS[currentView].key;
+      const rows = latestData.jobs[key] || [];
+      const match = rows.find(
+        (job) =>
+          job.title === payload.row.title &&
+          job.company === payload.row.company &&
+          (!payload.row.link || !job.link || job.link === payload.row.link)
+      );
+      if (match) {
+        Object.assign(match, payload.row);
+        lastTableSignature = "";
+        paintView();
+      } else {
+        pullLiveJobs();
+      }
     }
-    if (!response.ok || !payload.ok) {
-      throw new Error(payload.error || `HTTP ${response.status}`);
-    }
-    statusEl.textContent = `Saved tailored resume: ${payload.filename}`;
+    statusEl.textContent = isReassess
+      ? `Re-analyzed ${button.dataset.title} with tailored resume`
+      : `Saved tailored resume: ${payload.filename}`;
     statusEl.classList.remove("error");
     statusEl.classList.add("done");
   } catch (error) {
-    statusEl.textContent = error.message || "Could not tailor resume.";
+    statusEl.textContent = error.message || (isReassess ? "Could not re-assess job." : "Could not tailor resume.");
     statusEl.classList.add("error");
   } finally {
     button.disabled = false;

@@ -1,5 +1,5 @@
 {
-  "status": "Technical Program Manager: done.",
+  "status": "Re-analyzed Engineering Delivery Manager at Standard Chartered India with tailored resume",
   "running": false,
   "running_by_role": {
     "Technical Program Manager": false,
@@ -56,6 +56,17 @@
         "why": "Arvin exceeds the core experience requirements with 8 years in software engineering and strong leadership tenure managing production delivery. While his domain background is centered around industrial automation and ML platforms rather than financial analytics, his deep experience with C#/.NET satisfies the requirement for Java or similar object-oriented languages. Additionally, his experience with GCP, relational databases, and high-performance system design aligns with the distributed system needs of Clearwater Analytics, though he will need to navigate a new business domain.",
         "weak_vs_jd": "Direct experience in financial services, investment reporting, or Wall Street technology domains, Explicit experience with NoSQL databases alongside relational database usage, Java microservices experience (candidate stack leans strongly toward C#/.NET ecosystems)",
         "note": "Arvin should highlight the transferability of his high-throughput industrial system architecture and C#/.NET background to Clearwater's Java-based financial analytics platform."
+      },
+      {
+        "title": "Software Engineer - Manager (SE)",
+        "company": "PwC Acceleration Center India",
+        "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-se-at-pwc-acceleration-center-india-4456926858",
+        "easy_apply": false,
+        "rating": 73,
+        "why": "The tailored resume demonstrates exceptional alignment with PwC's call for full-stack architecture, Agile delivery, client stakeholder management, and team mentorship. Arvin also aligns with PwC's push for innovation through his experience with AI-assisted development tools and leading teams through technical ambiguity. The primary gap is the strict experience band, as PwC asks for 12\u201314 years while Arvin brings approximately 10 years, along with unverified experience in Java and Python.",
+        "weak_vs_jd": "12 to 14 years of relevant software engineering experience (resume demonstrates ~10 years), Hands-on experience with Java and Python languages, Specific exposure to Azure AI Services (Agentic AI) and Azure Functions",
+        "note": "PwC AC India frequently uses YOE bands for managerial grading, but Arvin's direct title match as Software Engineering Manager and client-facing record justify submitting an application. | Re-analyzed with tailored resume (PwC_Acceleration_Center_India-Software_Engineer_-_Manager_(SE).pdf)",
+        "reassessed": true
       },
       {
         "title": "Manager, Software Engineering",
@@ -198,16 +209,6 @@
         "note": "Lacks the formal people management responsibility requested in target criteria."
       },
       {
-        "title": "Software Engineer - Manager (SE)",
-        "company": "PwC Acceleration Center India",
-        "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-se-at-pwc-acceleration-center-india-4456926858",
-        "easy_apply": false,
-        "rating": 55,
-        "why": "Arvin's current management capacity\u2014leading cross-functional development, enforcing architecture standards, and overseeing cloud/edge deployments\u2014aligns well with the technical execution requirements of this Manager role. His technical background in .NET, Angular/React, and Azure directly overlaps with key elements of PwC's stack. However, the job explicitly requires 12 to 14 years of experience, whereas Arvin has 8 years, creating a major seniority deficit for a Big 4 Acceleration Center. Furthermore, his career is rooted in industrial IoT/energy product delivery rather than multi-client IT enterprise consulting and services.",
-        "weak_vs_jd": "12 to 14 years of relevant software engineering experience, Demonstrated expertise in Python, Java, and enterprise microservices architecture, Experience in an IT services, consulting, or global acceleration center (GCC) delivery model, Hands-on exposure to Azure Agentic AI Services and formal API Management tools",
-        "note": "The 8-year total experience profile is a major bottleneck against the explicit 12-14 year mandate, which typically serves as a strict hard filter in corporate acceleration center recruiting."
-      },
-      {
         "title": "Senior Team Lead",
         "company": "Yoti",
         "link": "https://in.linkedin.com/jobs/view/senior-team-lead-at-yoti-4484998296",
@@ -268,6 +269,28 @@
         "why": "Identical in scope to j15 (Lyzr AI SPM role), requiring someone who can coordinate solution architects, AI engineers, and client stakeholders to deploy agentic AI platforms into enterprise environments. Arvin's software architecture, cloud deployment, and technical pre-sales expertise position him perfectly for success in this role.",
         "weak_vs_jd": "Lyzr-specific AI frameworks",
         "note": ""
+      },
+      {
+        "title": "Technical Project Manager (3 - 5 years)",
+        "company": "PhonePe",
+        "link": "https://in.linkedin.com/jobs/view/technical-project-manager-3-5-years-at-phonepe-4483050673",
+        "easy_apply": false,
+        "rating": 88,
+        "why": "Arvin brings nearly 9 years of hands-on technical execution experience, easily satisfying the 4+ years requirement for core TPM roles. His work at Nybl managing multi-team backlogs in Azure DevOps/JIRA, designing solution architectures, and overseeing API/message queue integrations mirrors PhonePe's needs for platform and partner integration delivery. While his domain focus has been in AI platforms, industrial IoT, and enterprise integrations rather than explicit Fintech/Payments, his technical depth across cloud infrastructure, state/data pipelines, and cross-functional leadership makes him a strong fit.",
+        "weak_vs_jd": "Explicit Fintech/InsurTech or payment flow domain experience, Formal certifications such as PMP or CSM (though strong applied Agile experience is evidenced)",
+        "note": "Arvin's total experience (~9 years) slightly exceeds the 3-5 year band, but his technical depth and engineering management background make him an exceptional candidate for high-ownership TPM positions. | Re-analyzed with tailored resume (PhonePe-Technical_Project_Manager_(3_-_5_years).pdf)",
+        "reassessed": true
+      },
+      {
+        "title": "Engineering Delivery Manager",
+        "company": "Standard Chartered India",
+        "link": "https://in.linkedin.com/jobs/view/engineering-delivery-manager-at-standard-chartered-india-4484184256",
+        "easy_apply": false,
+        "rating": 88,
+        "why": "The candidate's experience as a Software Engineering Manager directly mirrors the JD's requirement for leading complex, cross-functional initiatives and managing delivery health. They demonstrate high proficiency in risk management, capacity planning, and executive stakeholder alignment. While their industry experience is in energy and health rather than banking, their technical leadership in cloud infrastructure and Agile governance is highly transferable to a global financial institution.",
+        "weak_vs_jd": "Direct experience in banking/financial regulatory environments, Explicit vendor and procurement management experience",
+        "note": "The candidate should emphasize any experience working within highly regulated or high-security frameworks to mitigate the lack of direct banking industry experience. | Re-analyzed with tailored resume (Standard_Chartered_India-Engineering_Delivery_Manager.pdf)",
+        "reassessed": true
       },
       {
         "title": "Engineering Manager (GCP)",
@@ -340,16 +363,6 @@
         "note": ""
       },
       {
-        "title": "Engineering Delivery Manager",
-        "company": "Standard Chartered India",
-        "link": "https://in.linkedin.com/jobs/view/engineering-delivery-manager-at-standard-chartered-india-4484184256",
-        "easy_apply": false,
-        "rating": 74,
-        "why": "This role requires a leader who can shape target architectures, coordinate global engineering teams, and manage multi-team delivery health. Arvin's dual background in software management and program execution fits this requirement well. While Standard Chartered is a major financial institution and Arvin comes from Energy/Industrial IoT, his enterprise tier-1 client alignment skills are highly transferrable.",
-        "weak_vs_jd": "Banking & financial services domain, Formal financial regulatory compliance background",
-        "note": ""
-      },
-      {
         "title": "Principal Technical Program Manager (Analytics or AI/ML Platform)",
         "company": "Atlassian",
         "link": "https://in.linkedin.com/jobs/view/principal-technical-program-manager-analytics-or-ai-ml-platform-at-atlassian-4467978736",
@@ -368,16 +381,6 @@
         "why": "Handshake requires a Manager of Strategic Projects to lead teams executing AI data and evaluation work for frontier AI labs. Arvin's strong background in AI applications and enterprise delivery translates well to overseeing high-stakes AI programs. However, the role leans heavily into operational human-in-the-loop data processes rather than software system architecture.",
         "weak_vs_jd": "AI data annotation and post-training operations management",
         "note": ""
-      },
-      {
-        "title": "Technical Project Manager (3 - 5 years)",
-        "company": "PhonePe",
-        "link": "https://in.linkedin.com/jobs/view/technical-project-manager-3-5-years-at-phonepe-4483050673",
-        "easy_apply": false,
-        "rating": 62,
-        "why": "PhonePe is looking for a mid-level TPM to drive platform and partner API integrations. Arvin's technical architecture skills and API integration background make him overqualified experience-wise (9 years as SEM/Lead), which might present a compensation or leveling mismatch. However, the core execution demands align closely with his execution strengths.",
-        "weak_vs_jd": "Fintech payments domain context",
-        "note": "Candidate is likely overqualified for a 3-5 year level role."
       },
       {
         "title": "Solution Owner Enterprise Search",

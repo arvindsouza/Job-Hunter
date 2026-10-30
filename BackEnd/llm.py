@@ -365,6 +365,40 @@ def _write_cached_fit(role: str, title: str, company: str, description: str, res
     )
 
 
+def analyze_tailored_resume_fit(
+    role_label: str,
+    tailored_resume: dict,
+    title: str,
+    company: str,
+    description: str,
+) -> dict:
+    jd = (description or "").strip()[:8000] or "(No job description was available. Judge from the title and company only.)"
+    data = complete_json(
+        (
+            "You are a hiring-side career coach. Score one job against a tailored resume "
+            "written for that job. Do not assume facts that are not in the tailored resume. "
+            "Return JSON only."
+        ),
+        (
+            f"Search role being hunted: {role_label}.\n"
+            f"TAILORED RESUME JSON:\n{json.dumps(tailored_resume, ensure_ascii=False)[:12000]}\n\n"
+            f"JOB TITLE: {title}\nCOMPANY: {company}\nJOB DESCRIPTION:\n{jd}\n\n"
+            "Return JSON with:\n"
+            "rating (integer 0-100: 80+ strong apply, 65-79 apply, 50-64 maybe, below 50 skip),\n"
+            "decision (apply|maybe|skip),\n"
+            "why (one or two sentences on the strongest fit),\n"
+            "reasoning (3-5 sentences of actual comparison against this tailored resume),\n"
+            "matched (array of 3-8 strengths the tailored resume now shows for this JD),\n"
+            "missed (array of JD requirements still weakly evidenced),\n"
+            "note (one practical caveat or empty string)."
+        ),
+        timeout=120,
+    )
+    result = _fit_result_from_payload(data, description)
+    result["reassessed"] = True
+    return result
+
+
 def analyze_job_fit(
     role: str,
     role_label: str,
