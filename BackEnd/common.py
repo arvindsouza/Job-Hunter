@@ -463,7 +463,7 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
             except Exception:
                 continue
 
-    if not company_url: 
+    if not company_url:
         company_url = click_apply_for_company_url(page, linkedin_url)
 
     if company_url and not is_linkedin_url(company_url):
