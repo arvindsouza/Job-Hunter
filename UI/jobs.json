@@ -1,412 +1,413 @@
 {
-  "status": "Technical Program Manager: scoring (32/60)",
-  "running": true,
+  "status": "Technical Program Manager: done.",
+  "running": false,
   "running_by_role": {
-    "Technical Program Manager": true,
+    "Technical Program Manager": false,
     "Software Engineering Manager": false
   },
   "jobs": {
-    "Software Engineering Manager": [],
+    "Software Engineering Manager": [
+      {
+        "title": "Engineering Manager",
+        "company": "ServiceChannel",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-servicechannel-4484957292",
+        "easy_apply": false,
+        "rating": 71,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, Net, SQL, Typescript, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Angular/React, CoPilot, Agile SCRUM",
+        "note": "LinkedIn | JD asks extra: Kubernetes, AWS, Microservices, SaaS, Jira"
+      },
+      {
+        "title": "AI Engineering Manager",
+        "company": "Samsara",
+        "link": "https://in.linkedin.com/jobs/view/ai-engineering-manager-at-samsara-4483095541",
+        "easy_apply": false,
+        "rating": 67,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, Net, Typescript, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, SQL, HTML/CSS, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Python, AWS, SaaS"
+      },
+      {
+        "title": "Senior Engineering Manager",
+        "company": "RingCentral",
+        "link": "https://in.linkedin.com/jobs/view/senior-engineering-manager-at-ringcentral-4469009098",
+        "easy_apply": false,
+        "rating": 62,
+        "why": "title is an Engineering Manager role | Resume hits: Net, SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, HTML/CSS, Typescript, Angular/React",
+        "note": "LinkedIn | JD asks extra: Java, Kubernetes, AWS, Microservices, Kafka"
+      },
+      {
+        "title": "Tech S and T - Backend-.Net-Manager-RT-GD02",
+        "company": "EY",
+        "link": "https://in.linkedin.com/jobs/view/tech-s-and-t-backend-net-manager-rt-gd02-at-ey-4484926934",
+        "easy_apply": false,
+        "rating": 62,
+        "why": "title includes manager | Resume hits: Net Framework, Net, SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Typescript, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Kubernetes, Microservices"
+      },
+      {
+        "title": "Engineering Manager (C# .NET, Cloud)",
+        "company": "Radiometer",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-c%23-net-cloud-at-radiometer-4466268842",
+        "easy_apply": false,
+        "rating": 62,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, Net, SQL, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Typescript, Program management, Angular/React",
+        "note": "LinkedIn"
+      },
+      {
+        "title": "Software Engineer - Manager (SE)",
+        "company": "PwC Acceleration Center India",
+        "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-se-at-pwc-acceleration-center-india-4456926858",
+        "easy_apply": false,
+        "rating": 57,
+        "why": "title includes manager | Resume hits: Net Framework, Net, Typescript, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, SQL, HTML/CSS, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Java, Python, Microservices"
+      },
+      {
+        "title": "GenAI Full Stack-Manager",
+        "company": "PwC Acceleration Center India",
+        "link": "https://in.linkedin.com/jobs/view/genai-full-stack-manager-at-pwc-acceleration-center-india-4475748032",
+        "easy_apply": false,
+        "rating": 57,
+        "why": "title includes manager | Resume hits: Net Framework, SQL, Typescript, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net, WPF, HTML/CSS, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Java, Python, AWS"
+      },
+      {
+        "title": "Engineering Manager (GCP)",
+        "company": "Woolworths Group International",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-gcp-at-woolworths-group-international-4484992316",
+        "easy_apply": false,
+        "rating": 57,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, SQL, Program management, Team leadership, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, Net, WPF, HTML/CSS, Typescript, Angular/React",
+        "note": "LinkedIn | JD asks extra: Python, Jira"
+      },
+      {
+        "title": "Engineering Manager",
+        "company": "Barclays",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-barclays-4482544276",
+        "easy_apply": false,
+        "rating": 57,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, SQL, Program management, Azure DevOps, Team leadership, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net, WPF, HTML/CSS, Typescript, Angular/React",
+        "note": "LinkedIn | JD asks extra: Python, AWS"
+      },
+      {
+        "title": "Engineering Manager - Edge AI & Robotics",
+        "company": "Aptiv",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-edge-ai-robotics-at-aptiv-4458763662",
+        "easy_apply": false,
+        "rating": 57,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: Python, Semiconductor"
+      },
+      {
+        "title": "Tech S and T-Frontend-React-Developer-Senior-RT-GD02",
+        "company": "EY",
+        "link": "https://in.linkedin.com/jobs/view/tech-s-and-t-frontend-react-developer-senior-rt-gd02-at-ey-4484937434",
+        "easy_apply": false,
+        "rating": 56,
+        "why": "title is a weak SEM match | Resume hits: Net Framework, Net, SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Typescript, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Kubernetes, Microservices"
+      },
+      {
+        "title": "Software Engineering Lead - Java, React, AWS",
+        "company": "Optum India",
+        "link": "https://in.linkedin.com/jobs/view/software-engineering-lead-java-react-aws-at-optum-india-4484938643",
+        "easy_apply": false,
+        "rating": 54,
+        "why": "title is a lead/manager-adjacent role | Resume hits: Net Framework, SQL, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, Net, WPF, HTML/CSS, Typescript, Program management",
+        "note": "LinkedIn | JD asks extra: Java, Python, AWS"
+      },
+      {
+        "title": "Software Development Manager",
+        "company": "Clearwater Analytics",
+        "link": "https://in.linkedin.com/jobs/view/software-development-manager-at-clearwater-analytics-4474808714",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title includes manager | Resume hits: SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, Net Framework, Net, WPF, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: Java, AWS"
+      },
+      {
+        "title": "Engineering Manager (Backend ) - WWE Champions",
+        "company": "Scopely",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-backend-wwe-champions-at-scopely-4448624743",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net, Program management, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: Python, AWS"
+      },
+      {
+        "title": "Engineering Manager, Managed Gateways Infrastructure",
+        "company": "Kong",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-managed-gateways-infrastructure-at-kong-4485222807",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net, Program management, Azure DevOps, Team leadership, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: Go, Kubernetes, AWS, SaaS"
+      },
+      {
+        "title": "Mainframe Modernisation Manager",
+        "company": "Infosys",
+        "link": "https://in.linkedin.com/jobs/view/mainframe-modernisation-manager-at-infosys-4462676822",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title includes manager | Resume hits: Net Framework, Net, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, SQL, HTML/CSS, Typescript, Angular/React",
+        "note": "LinkedIn | JD asks extra: Java, Python, AWS, Microservices, Kafka, PMP/PMI"
+      },
+      {
+        "title": "Software Engineering Manager, Search",
+        "company": "Google",
+        "link": "https://in.linkedin.com/jobs/view/software-engineering-manager-search-at-google-4475444140",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net, Typescript, Program management, Team leadership, Claude code, People management, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Angular/React",
+        "note": "LinkedIn | JD asks extra: Java"
+      },
+      {
+        "title": "Software Engineering Manager II, Google Cloud",
+        "company": "Google",
+        "link": "https://in.linkedin.com/jobs/view/software-engineering-manager-ii-google-cloud-at-google-4483039169",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net, Program management, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: Java, Python"
+      },
+      {
+        "title": "Manager-Software Development",
+        "company": "Mettler-Toledo International, Inc",
+        "link": "https://in.linkedin.com/jobs/view/manager-software-development-at-mettler-toledo-international-inc-4484518068",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title includes manager | Resume hits: Net, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: AWS, SAFe"
+      },
+      {
+        "title": "Senior Manager",
+        "company": "Zebra Technologies",
+        "link": "https://in.linkedin.com/jobs/view/senior-manager-at-zebra-technologies-4447361497",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title includes manager | Resume hits: Net Framework, Net, SQL, Program management, Azure DevOps, Team leadership, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Typescript, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Kubernetes, Microservices"
+      },
+      {
+        "title": "Engineering Manager - Git & Gitaly Operations",
+        "company": "GitLab",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-git-gitaly-operations-at-gitlab-4440091233",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net, Program management, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, Net Framework, WPF, SQL, HTML/CSS, Typescript",
+        "note": "LinkedIn | JD asks extra: SaaS"
+      },
+      {
+        "title": "Engineering Manager (Verification & Validation)",
+        "company": "Radiometer",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-verification-validation-at-radiometer-4467197029",
+        "easy_apply": false,
+        "rating": 52,
+        "why": "title is an Engineering Manager role | Resume hits: Net Framework, Net, Azure DevOps, Team leadership, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, SQL, HTML/CSS, Typescript, Program management",
+        "note": "LinkedIn"
+      },
+      {
+        "title": "Java Lead",
+        "company": "Infosys",
+        "link": "https://in.linkedin.com/jobs/view/java-lead-at-infosys-4484538122",
+        "easy_apply": false,
+        "rating": 51,
+        "why": "title is a weak SEM match | Resume hits: Net Framework, SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform, Agile SCRUM",
+        "weak_vs_jd": "C#, Net, WPF, HTML/CSS, Typescript, Angular/React",
+        "note": "LinkedIn | JD asks extra: Java, AWS, Microservices"
+      },
+      {
+        "title": "Principal Software Engineer",
+        "company": "Solera Holdings, LLC.",
+        "link": "https://in.linkedin.com/jobs/view/principal-software-engineer-at-solera-holdings-llc-4454755693",
+        "easy_apply": false,
+        "rating": 51,
+        "why": "title is a weak SEM match | Resume hits: Net Framework, Net, SQL, Typescript, Program management, Azure DevOps, Team leadership, Claude code, People management, Agile SCRUM",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Angular/React, CoPilot, Alibaba Cloud",
+        "note": "LinkedIn | JD asks extra: Kubernetes"
+      },
+      {
+        "title": "Lead Software Engineer - Java Backend",
+        "company": "Lenskart.com",
+        "link": "https://in.linkedin.com/jobs/view/lead-software-engineer-java-backend-at-lenskart-com-4482585878",
+        "easy_apply": false,
+        "rating": 51,
+        "why": "title is a weak SEM match | Resume hits: Net Framework, Net, SQL, Program management, Azure DevOps, Team leadership, Claude code, People management, Alibaba Cloud, Google Cloud Platform",
+        "weak_vs_jd": "C#, WPF, HTML/CSS, Typescript, Angular/React, CoPilot",
+        "note": "LinkedIn | JD asks extra: Java, Kubernetes, AWS, Microservices, Kafka"
+      }
+    ],
     "Technical Program Manager": [
       {
-        "title": "Technical Program Manager",
-        "company": "Advanced Sterilization Products",
-        "link": "https://in.linkedin.com/jobs/view/technical-program-manager-at-advanced-sterilization-products-4484730022",
+        "title": "Technical Project Manager (3 - 5 years)",
+        "company": "PhonePe",
+        "link": "https://in.linkedin.com/jobs/view/technical-project-manager-3-5-years-at-phonepe-4483050673",
         "easy_apply": false,
         "rating": 76,
-        "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Industrial Automation (SCADA/Oil &, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Azure DevOps, Backlog, Grooming, Gas)",
-        "note": "JD asks extra: Jira, PMP/PMI, PMO"
+        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Industrial Automation (SCADA/Oil & Gas), Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Pre-Sales Scoping, Backlog, Grooming, C#)",
+        "note": "LinkedIn | JD asks extra: Fintech, Jira, PMP/PMI"
       },
       {
         "title": "Technical Program Manager",
         "company": "GitLab",
         "link": "https://in.linkedin.com/jobs/view/technical-program-manager-at-gitlab-4467948930",
         "easy_apply": false,
-        "rating": 73,
+        "rating": 74,
         "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Pre-Sales Scoping, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Backlog, Grooming, Industrial Automation (SCADA/Oil &, Gas), Cloud Infrastructure (GCP",
-        "note": ""
+        "weak_vs_jd": "Dependency Mapping, Backlog, Grooming, Industrial Automation (SCADA/Oil & Gas), Cloud Infrastructure (GCP, Alibaba Cloud)",
+        "note": "LinkedIn"
       },
       {
-        "title": "Principal Technical Program Manager (Analytics or AI/ML Platform)",
-        "company": "Atlassian",
-        "link": "https://in.linkedin.com/jobs/view/principal-technical-program-manager-analytics-or-ai-ml-platform-at-atlassian-4467978736",
+        "title": "Technical Program Manager",
+        "company": "Korza",
+        "link": "https://www.instahyre.com/job-448528-technical-program-manager-at-korza-bangalore/",
         "easy_apply": false,
-        "rating": 66,
-        "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Pre-Sales Scoping, Stakeholder Management, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Risk Mitigation, Agile Scrum, Azure DevOps, Backlog, Grooming",
-        "note": ""
-      },
-      {
-        "title": "Principal Enterprise Delivery Manager",
-        "company": "Atlassian",
-        "link": "https://in.linkedin.com/jobs/view/principal-enterprise-delivery-manager-at-atlassian-4458771995",
-        "easy_apply": false,
-        "rating": 65,
-        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Industrial Automation (SCADA/Oil &, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Backlog, Grooming, Gas)",
-        "note": ""
-      },
-      {
-        "title": "ASSOCIATE PROGRAM DIRECTOR - Program Management",
-        "company": "Happiest Minds Technologies",
-        "link": "https://in.linkedin.com/jobs/view/associate-program-director-program-management-at-happiest-minds-technologies-4484924000",
-        "easy_apply": false,
-        "rating": 62,
-        "why": "title is a weak TPM match | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Computer Vision Platforms, Industrial Automation (SCADA/Oil &, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
-        "weak_vs_jd": "Pre-Sales Scoping, Backlog, Grooming, Machine Learning (AutoML), Gas), C#)",
-        "note": "JD asks extra: Microservices"
-      },
-      {
-        "title": "Senior Program Manager",
-        "company": "Ericsson",
-        "link": "https://in.linkedin.com/jobs/view/senior-program-manager-at-ericsson-4484907655",
-        "easy_apply": false,
-        "rating": 60,
-        "why": "title is Program Manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud)",
-        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Azure DevOps, Backlog, Grooming, Machine Learning (AutoML)",
-        "note": "JD asks extra: PMP/PMI"
-      },
-      {
-        "title": "Manufacturing Program Manager",
-        "company": "Hewlett Packard Enterprise",
-        "link": "https://in.linkedin.com/jobs/view/manufacturing-program-manager-at-hewlett-packard-enterprise-4484455358",
-        "easy_apply": false,
-        "rating": 56,
-        "why": "title is Program Manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud)",
-        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Azure DevOps, Backlog, Grooming",
-        "note": ""
-      },
-      {
-        "title": "Talent Pool - IS - Project manager / Program Manager / Project/Program Lead / Senior Project Manager",
-        "company": "ABB",
-        "link": "https://in.linkedin.com/jobs/view/talent-pool-is-project-manager-program-manager-project-program-lead-senior-project-manager-at-abb-4431715856",
-        "easy_apply": false,
-        "rating": 56,
-        "why": "title is Program Manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Azure DevOps, Backlog, Grooming",
-        "note": "JD asks extra: PMP/PMI"
-      },
-      {
-        "title": "Microsoft-CRM Technical-Senior Manager",
-        "company": "EY",
-        "link": "https://in.linkedin.com/jobs/view/microsoft-crm-technical-senior-manager-at-ey-4466204090",
-        "easy_apply": false,
-        "rating": 56,
-        "why": "title includes manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Pre-Sales Scoping, Stakeholder Management, Agile Scrum, Azure DevOps, Resource Scaling, Machine Learning (AutoML), Computer Vision Platforms, Cloud Infrastructure (GCP, Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Sprint Planning, Capacity Planning, Backlog, Grooming, Industrial Automation (SCADA/Oil &",
-        "note": "JD asks extra: AWS"
-      },
-      {
-        "title": "Senior Project Manager \u2013 AI Delivery",
-        "company": "Kapture CX",
-        "link": "https://in.linkedin.com/jobs/view/senior-project-manager-%E2%80%93-ai-delivery-at-kapture-cx-4476938458",
-        "easy_apply": false,
-        "rating": 55,
-        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Pre-Sales Scoping, Stakeholder Management, Agile Scrum, Sprint Planning, Capacity Planning, Computer Vision Platforms, Industrial Automation (SCADA/Oil &, Software Architecture (.Net",
-        "weak_vs_jd": "Dependency Mapping, Azure DevOps, Resource Scaling, Backlog, Grooming, Machine Learning (AutoML)",
-        "note": "JD asks extra: SaaS, Jira, PMP/PMI"
-      },
-      {
-        "title": "Senior Program Manager, 3P Strategic Account Services",
-        "company": "Amazon",
-        "link": "https://in.linkedin.com/jobs/view/senior-program-manager-3p-strategic-account-services-at-amazon-4458256527",
-        "easy_apply": false,
-        "rating": 53,
-        "why": "title is Program Manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Stakeholder Management, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Industrial Automation (SCADA/Oil &",
-        "weak_vs_jd": "Risk Mitigation, Pre-Sales Scoping, Agile Scrum, Azure DevOps, Backlog, Grooming",
-        "note": ""
-      },
-      {
-        "title": "Project Manager I (SAP BTP Project Manager)",
-        "company": "UST",
-        "link": "https://in.linkedin.com/jobs/view/project-manager-i-sap-btp-project-manager-at-ust-4477139078",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Technical Support Manager",
-        "company": "Hewlett Packard Enterprise",
-        "link": "https://in.linkedin.com/jobs/view/technical-support-manager-at-hewlett-packard-enterprise-4484411937",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Technical Account Manager - 2",
-        "company": "Cashfree",
-        "link": "https://in.linkedin.com/jobs/view/technical-account-manager-2-at-cashfree-4484910941",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Senior Project Lead (Digital Strategist \u2013 Website Management)",
-        "company": "Marmon Technologies India Pvt Ltd",
-        "link": "https://in.linkedin.com/jobs/view/senior-project-lead-digital-strategist-%E2%80%93-website-management-at-marmon-technologies-india-pvt-ltd-4484945479",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Escalations Technical Leader",
-        "company": "Cisco",
-        "link": "https://in.linkedin.com/jobs/view/escalations-technical-leader-at-cisco-4484934917",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Engagement Manager",
-        "company": "Treasure AI",
-        "link": "https://in.linkedin.com/jobs/view/engagement-manager-at-treasure-ai-4403988262",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "GN-I&E-Automotive-AOE-AI Platform-Senior Manager",
-        "company": "Accenture in India",
-        "link": "https://in.linkedin.com/jobs/view/gn-i-e-automotive-aoe-ai-platform-senior-manager-at-accenture-in-india-4455768176",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Cyber Operate- SOAR + Anthropic - Manager",
-        "company": "Deloitte",
-        "link": "https://in.linkedin.com/jobs/view/cyber-operate-soar-%2B-anthropic-manager-at-deloitte-4430385679",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "TECHNICAL SPECIALIST II",
-        "company": "TE Connectivity",
-        "link": "https://in.linkedin.com/jobs/view/technical-specialist-ii-at-te-connectivity-4484953241",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Program Manager",
-        "company": "ITC Infotech",
-        "link": "https://in.linkedin.com/jobs/view/program-manager-at-itc-infotech-4465986217",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "GN-I&E-Industrial-T&L(Rail)-Senior Manager",
-        "company": "Accenture in India",
-        "link": "https://in.linkedin.com/jobs/view/gn-i-e-industrial-t-l-rail-senior-manager-at-accenture-in-india-4454096675",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Clinical System Lead",
-        "company": "ICON plc",
-        "link": "https://in.linkedin.com/jobs/view/clinical-system-lead-at-icon-plc-4475446036",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 74,
+        "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Pre-Sales Scoping, Agile Scrum, Backlog, Grooming, Machine Learning (AutoML), Industrial Automation (SCADA/Oil & Gas)",
+        "note": "Instahyre | JD asks extra: Microservices"
       },
       {
         "title": "Scrum Master Project Manager Oracle Apps Technical",
         "company": "InfoVision Inc.",
         "link": "https://in.linkedin.com/jobs/view/scrum-master-project-manager-oracle-apps-technical-at-infovision-inc-4484917346",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 69,
+        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Backlog, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud)",
+        "weak_vs_jd": "Pre-Sales Scoping, Grooming, Machine Learning (AutoML), Industrial Automation (SCADA/Oil & Gas), Software Architecture (.Net, C#)",
+        "note": "LinkedIn | JD asks extra: Jira, PMP/PMI"
       },
       {
-        "title": "Sr Cust Supp Mgt Professional (Delivery Lead)",
-        "company": "Honeywell Technologies",
-        "link": "https://in.linkedin.com/jobs/view/sr-cust-supp-mgt-professional-delivery-lead-at-honeywell-technologies-4475428283",
+        "title": "Principal Technical Program Manager (Analytics or AI/ML Platform)",
+        "company": "Atlassian",
+        "link": "https://in.linkedin.com/jobs/view/principal-technical-program-manager-analytics-or-ai-ml-platform-at-atlassian-4467978736",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 67,
+        "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Pre-Sales Scoping, Stakeholder Management, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Risk Mitigation, Agile Scrum, Azure DevOps, Backlog, Grooming",
+        "note": "LinkedIn"
       },
       {
-        "title": "Associate Director - Product Owner, Engineering, EHS & Sustainability",
-        "company": "GSK",
-        "link": "https://in.linkedin.com/jobs/view/associate-director-product-owner-engineering-ehs-sustainability-at-gsk-4482569401",
+        "title": "Technical Account Manager (Offshore Delivery & People Management)",
+        "company": "Simeio",
+        "link": "https://in.linkedin.com/jobs/view/technical-account-manager-offshore-delivery-people-management-at-simeio-4468205440",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 67,
+        "why": "title includes manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Industrial Automation (SCADA/Oil & Gas), Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Backlog, Grooming, Computer Vision Platforms, C#)",
+        "note": "LinkedIn | JD asks extra: Java"
       },
       {
-        "title": "Manager - SAP-Project Management",
-        "company": "Bristlecone",
-        "link": "https://in.linkedin.com/jobs/view/manager-sap-project-management-at-bristlecone-4458740408",
+        "title": "Cyber Operate- SOAR + Anthropic - Manager",
+        "company": "Deloitte",
+        "link": "https://in.linkedin.com/jobs/view/cyber-operate-soar-%2B-anthropic-manager-at-deloitte-4430385679",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 67,
+        "why": "title includes manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Sprint Planning, Azure DevOps, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Industrial Automation (SCADA/Oil & Gas), Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Backlog, Grooming, C#)",
+        "note": "LinkedIn | JD asks extra: AWS"
       },
       {
-        "title": "Project Manager - Software & Mission Systems",
-        "company": "ReOrbit",
-        "link": "https://in.linkedin.com/jobs/view/project-manager-software-mission-systems-at-reorbit-4482535443",
+        "title": "Senior Program Manager",
+        "company": "Ericsson",
+        "link": "https://in.linkedin.com/jobs/view/senior-program-manager-at-ericsson-4484907655",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 61,
+        "why": "title is Program Manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Resource Scaling, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud)",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Azure DevOps, Backlog, Grooming, Machine Learning (AutoML)",
+        "note": "LinkedIn | JD asks extra: PMP/PMI"
       },
       {
-        "title": "VP Client Tech",
-        "company": "mea",
-        "link": "https://in.linkedin.com/jobs/view/vp-client-tech-at-mea-4484974130",
+        "title": "Engineering Manager (GCP)",
+        "company": "Woolworths Group International",
+        "link": "https://in.linkedin.com/jobs/view/engineering-manager-gcp-at-woolworths-group-international-4484992316",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 59,
+        "why": "title is Engineering Manager, not TPM | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Azure DevOps, Backlog, Grooming, Computer Vision Platforms",
+        "note": "LinkedIn | JD asks extra: Python, Jira"
       },
       {
-        "title": "Enterprise Systems Professional, Bengaluru,IND",
-        "company": "Diversified",
-        "link": "https://in.linkedin.com/jobs/view/enterprise-systems-professional-bengaluru-ind-at-diversified-4476759581",
+        "title": "Technical Product Owner, GSINC Contracting Solution",
+        "company": "Johnson & Johnson",
+        "link": "https://in.linkedin.com/jobs/view/technical-product-owner-gsinc-contracting-solution-at-johnson-johnson-4485247848",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 59,
+        "why": "title is a weak TPM match | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Agile Scrum, Sprint Planning, Azure DevOps, Capacity Planning, Backlog, Computer Vision Platforms, Industrial Automation (SCADA/Oil & Gas), Software Architecture (.Net",
+        "weak_vs_jd": "Pre-Sales Scoping, Resource Scaling, Grooming, Machine Learning (AutoML), Cloud Infrastructure (GCP, Alibaba Cloud)",
+        "note": "LinkedIn | JD asks extra: SaaS, Jira"
       },
       {
-        "title": "Manager - CPU Library Optimizations",
-        "company": "AMD",
-        "link": "https://in.linkedin.com/jobs/view/manager-cpu-library-optimizations-at-amd-4474486189",
+        "title": "Engineering Delivery Manager",
+        "company": "Standard Chartered India",
+        "link": "https://in.linkedin.com/jobs/view/engineering-delivery-manager-at-standard-chartered-india-4484184256",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 57,
+        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Dependency Mapping, Risk Mitigation, Stakeholder Management, Agile Scrum, Resource Scaling, Capacity Planning, Machine Learning (AutoML), Computer Vision Platforms, Software Architecture (.Net",
+        "weak_vs_jd": "Pre-Sales Scoping, Sprint Planning, Azure DevOps, Backlog, Grooming, Industrial Automation (SCADA/Oil & Gas)",
+        "note": "LinkedIn"
       },
       {
-        "title": "Senior Customer Value Architect",
-        "company": "Mixpanel",
-        "link": "https://in.linkedin.com/jobs/view/senior-customer-value-architect-at-mixpanel-4467472349",
+        "title": "Senior Technical Account Manager",
+        "company": "Oracle",
+        "link": "https://in.linkedin.com/jobs/view/senior-technical-account-manager-at-oracle-4483068507",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 56,
+        "why": "title includes manager | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Sprint Planning, Azure DevOps, Capacity Planning, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Resource Scaling, Backlog, Grooming",
+        "note": "LinkedIn | JD asks extra: AWS"
       },
       {
-        "title": "ABB Talent Pool - Project Manager / Associate Project Manager / Senior Project Manager",
-        "company": "ABB",
-        "link": "https://in.linkedin.com/jobs/view/abb-talent-pool-project-manager-associate-project-manager-senior-project-manager-at-abb-4431712892",
+        "title": "Senior Project Manager (Platform)",
+        "company": "Lyzr AI",
+        "link": "https://in.linkedin.com/jobs/view/senior-project-manager-platform-at-lyzr-ai-4483025139",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 54,
+        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Agile Scrum, Azure DevOps, Industrial Automation (SCADA/Oil & Gas), Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Sprint Planning, Resource Scaling, Capacity Planning, Backlog",
+        "note": "LinkedIn | JD asks extra: Kubernetes, AWS, SaaS, Jira, PMP/PMI"
       },
       {
-        "title": "Project Manager - Data Engineering [T500-30292]",
-        "company": "Talent500",
-        "link": "https://in.linkedin.com/jobs/view/project-manager-data-engineering-t500-30292-at-talent500-4482459024",
+        "title": "Sr. Technical Program Manager",
+        "company": "Amazon",
+        "link": "https://in.linkedin.com/jobs/view/sr-technical-program-manager-at-amazon-4468261302",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 52,
+        "why": "title is a Technical Program Manager role | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Risk Mitigation, Stakeholder Management, Resource Scaling, Computer Vision Platforms, Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Pre-Sales Scoping, Agile Scrum, Sprint Planning, Azure DevOps, Capacity Planning",
+        "note": "LinkedIn"
       },
       {
-        "title": "Pentest Coordinator",
-        "company": "Thomson Reuters",
-        "link": "https://in.linkedin.com/jobs/view/pentest-coordinator-at-thomson-reuters-4484940342",
+        "title": "Technical Project Manager",
+        "company": "Impetus",
+        "link": "https://in.linkedin.com/jobs/view/technical-project-manager-at-impetus-4484952079",
         "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Manager - Cloud Ops - Cld Ser",
-        "company": "ITC Infotech",
-        "link": "https://in.linkedin.com/jobs/view/manager-cloud-ops-cld-ser-at-itc-infotech-4446648388",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Director, Solutions Builder (Builder Portfolio Leader)",
-        "company": "Salesforce",
-        "link": "https://in.linkedin.com/jobs/view/director-solutions-builder-builder-portfolio-leader-at-salesforce-4484746292",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Senior SAP GTS Consulting Manager",
-        "company": "ArchLynk",
-        "link": "https://in.linkedin.com/jobs/view/senior-sap-gts-consulting-manager-at-archlynk-4448203940",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "IM UAM PMO Senior Analyst",
-        "company": "Johnson & Johnson Innovative Medicine",
-        "link": "https://in.linkedin.com/jobs/view/im-uam-pmo-senior-analyst-at-johnson-johnson-innovative-medicine-4476944115",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
-      },
-      {
-        "title": "Scrum Master / Project Manager",
-        "company": "Infosys",
-        "link": "https://in.linkedin.com/jobs/view/scrum-master-project-manager-at-infosys-4483888944",
-        "easy_apply": false,
-        "rating": null,
-        "why": "",
-        "weak_vs_jd": "",
-        "note": ""
+        "rating": 50,
+        "why": "title is delivery/project management | Resume hits: Program Management, Cross-Functional Leadership, End-to-End Program Lifecycle, Strategic Resource Allocation, Stakeholder Management, Azure DevOps, Resource Scaling, Computer Vision Platforms, Cloud Infrastructure (GCP, Alibaba Cloud), Software Architecture (.Net",
+        "weak_vs_jd": "Dependency Mapping, Risk Mitigation, Pre-Sales Scoping, Agile Scrum, Sprint Planning, Capacity Planning",
+        "note": "LinkedIn | JD asks extra: AWS"
       }
     ]
   }

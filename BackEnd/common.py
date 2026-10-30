@@ -10,7 +10,9 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+from datetime import date, timedelta
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
@@ -33,6 +35,18 @@ DEFAULT_TIME_RANGE = "week"
 TIME_RANGE_SECONDS = {
     "24h": 86400,
     "week": 604800,
+}
+INSTAHYRE_API = "https://www.instahyre.com/api/v1/job_search"
+INSTAHYRE_SKILLS = {
+    "em": "Engineering Manager",
+    "tpm": "Technical Program Manager",
+}
+BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
 }
 UI_HOST = "127.0.0.1"
 UI_PORT = 8765
@@ -391,10 +405,151 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
     return linkedin_url, easy_apply
 
 
-def fetch_job_details(page, url: str) -> dict:
-    details = {"description": "", "apply_url": url, "easy_apply": False}
+def is_instahyre_url(url: str) -> bool:
+    return bool(url) and "instahyre.com" in urlparse(url).netloc.lower()
+
+
+def http_get(url: str, timeout: int = 20) -> bytes:
+    request = urllib.request.Request(
+        url,
+        headers={**BROWSER_HEADERS, "Accept": "application/json,text/html;q=0.9"},
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read()
+
+
+def strip_html_text(raw: str) -> str:
+    text = html.unescape(raw or "")
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</p>", "\n", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def posted_in_selected_range(posted_at: str | None, source: str | None) -> bool:
+    if source != "Instahyre" or not posted_at:
+        return True
+    try:
+        posted = date.fromisoformat(posted_at[:10])
+    except ValueError:
+        return True
+    days = 1 if load_settings()["time_range"] == "24h" else 7
+    return posted >= date.today() - timedelta(days=days)
+
+
+def instahyre_in_bangalore(locations: str) -> bool:
+    text = (locations or "").lower()
+    return "bangalore" in text or "bengaluru" in text
+
+
+def extract_instahyre_jobs(role_id: str, title_fit_fn) -> list[dict[str, str]]:
+    skill = INSTAHYRE_SKILLS.get(role_id, "")
+    search_query = ROLE_META[role_id]["search"]
+    jobs: list[dict[str, str]] = []
+    offset = 0
+    pages = 0
+    while pages < 12 and len(jobs) < 50:
+        query = urllib.parse.urlencode({"skills": skill, "offset": offset, "limit": 35})
+        try:
+            payload = json.loads(http_get(f"{INSTAHYRE_API}?{query}").decode("utf-8", errors="replace"))
+        except Exception:
+            break
+        objects = payload.get("objects") or []
+        if not objects:
+            break
+        for item in objects:
+            title = (item.get("candidate_title") or item.get("title") or "").strip()
+            locations = item.get("locations") or ""
+            if not title or not instahyre_in_bangalore(locations):
+                continue
+            title_points, _ = title_fit_fn(title)
+            if title_points < 10:
+                continue
+            employer = item.get("employer") or {}
+            link = item.get("public_url") or ""
+            jobs.append(
+                {
+                    "title": title,
+                    "company": employer.get("company_name") or "Unknown company",
+                    "link": link or "Link not found",
+                    "applicants": "Not shown",
+                    "search": search_query,
+                    "source": "Instahyre",
+                }
+            )
+            if len(jobs) >= 50:
+                break
+        pages += 1
+        if len(objects) < 35:
+            break
+        offset += 35
+    return jobs
+
+
+def fetch_instahyre_details(url: str) -> dict:
+    details = {"description": "", "apply_url": url, "easy_apply": False, "posted_at": ""}
     if not url or url == "Link not found":
         return details
+    try:
+        page_html = http_get(url).decode("utf-8", errors="replace")
+    except Exception:
+        return details
+    for block in re.findall(
+        r'<script type="application/ld\+json">(.*?)</script>',
+        page_html,
+        flags=re.S | re.I,
+    ):
+        try:
+            data = json.loads(block)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict) or data.get("@type") != "JobPosting":
+            continue
+        details["posted_at"] = str(data.get("datePosted") or "")
+        details["description"] = strip_html_text(str(data.get("description") or ""))
+        details["apply_url"] = url
+        break
+    return details
+
+
+def linkedin_job_id(url: str) -> str:
+    path = urlparse(url).path.rstrip("/")
+    match = re.search(r"(\d{8,})$", path)
+    return match.group(1) if match else ""
+
+
+def fetch_linkedin_guest_details(url: str) -> dict:
+    details = {"description": "", "apply_url": url.split("?")[0] if url else url, "easy_apply": False, "posted_at": ""}
+    job_id = linkedin_job_id(url)
+    if not job_id:
+        return details
+    try:
+        page_html = http_get(
+            f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
+        ).decode("utf-8", errors="replace")
+    except Exception:
+        return details
+    match = re.search(
+        r'<div[^>]*show-more-less-html__markup[\s\S]*?</div>',
+        page_html,
+        flags=re.I,
+    )
+    if match:
+        details["description"] = strip_html_text(match.group(0))
+    details["easy_apply"] = bool(re.search(r"easy apply", page_html, flags=re.I))
+    return details
+
+
+def fetch_job_details(page, url: str) -> dict:
+    details = {"description": "", "apply_url": url, "easy_apply": False, "posted_at": ""}
+    if not url or url == "Link not found":
+        return details
+    if is_instahyre_url(url):
+        return fetch_instahyre_details(url)
+    if is_linkedin_url(url):
+        guest = fetch_linkedin_guest_details(url)
+        if guest.get("description"):
+            return guest
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1500)
@@ -420,15 +575,20 @@ def fetch_job_details(page, url: str) -> dict:
 
 
 def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
+    scored: list[dict] = []
     total = len(jobs)
     for index, job in enumerate(jobs, start=1):
-        publish_ui(jobs, f"{config['label']}: scoring ({index}/{total})", True, config["search"])
+        publish_ui(scored, f"{config['label']}: scoring ({index}/{total})", True, config["search"])
         details = fetch_job_details(page, job["link"])
+        if not posted_in_selected_range(details.get("posted_at"), job.get("source")):
+            continue
         job["description"] = details["description"]
         job["apply_url"] = details["apply_url"]
         job["easy_apply"] = details["easy_apply"]
         job.update(score_job(job["title"], details["description"], config))
-        publish_ui(jobs, f"{config['label']}: scored ({index}/{total})", True, config["search"])
+        scored.append(job)
+        publish_ui(scored, f"{config['label']}: scored ({index}/{total})", True, config["search"])
+    jobs[:] = scored
 
 
 def normalize_time_range(value: str | None) -> str:
@@ -473,6 +633,68 @@ def build_search_url(job_title: str) -> str:
         "&position=1"
         "&pageNum=0"
     )
+
+
+def extract_linkedin_guest_jobs(search_query: str) -> list[dict[str, str]]:
+    """Public LinkedIn job cards; works without a logged-in Chrome session."""
+    seconds = TIME_RANGE_SECONDS[load_settings()["time_range"]]
+    jobs: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for start in range(0, 75, 25):
+        url = (
+            "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+            f"?keywords={quote(search_query)}"
+            "&location=Bengaluru%2C%20Karnataka%2C%20India"
+            "&geoId=105214831"
+            f"&f_TPR=r{seconds}"
+            f"&start={start}"
+        )
+        try:
+            page_html = http_get(url).decode("utf-8", errors="replace")
+        except Exception:
+            break
+        chunks = re.split(r'class="[^"]*job-search-card', page_html)
+        page_count = 0
+        for chunk in chunks[1:]:
+            title_match = re.search(r"base-search-card__title[^>]*>([\s\S]*?)</h3>", chunk)
+            company_match = re.search(r"base-search-card__subtitle[^>]*>([\s\S]*?)</h4>", chunk)
+            href_match = re.search(r'href="([^"]+/jobs/view/[^"]+)"', chunk)
+            urn_match = re.search(r"urn:li:jobPosting:(\d+)", chunk)
+            applicant_match = re.search(
+                r"job-search-card__applicant-count[^>]*>([\s\S]*?)</span>",
+                chunk,
+            )
+            title = strip_html_text(title_match.group(1) if title_match else "")
+            if not title:
+                continue
+            company = strip_html_text(company_match.group(1) if company_match else "") or "Unknown company"
+            if href_match:
+                link = html.unescape(href_match.group(1)).split("?")[0]
+            elif urn_match:
+                link = f"https://www.linkedin.com/jobs/view/{urn_match.group(1)}"
+            else:
+                link = "Link not found"
+            applicant_text = strip_html_text(applicant_match.group(1) if applicant_match else "") or "Not shown"
+            if should_skip_job(applicant_text):
+                continue
+            key = link if link != "Link not found" else f"{title}|{company}"
+            if key in seen:
+                continue
+            seen.add(key)
+            jobs.append(
+                {
+                    "title": title,
+                    "company": company,
+                    "link": link,
+                    "applicants": applicant_text,
+                    "search": search_query,
+                    "source": "LinkedIn",
+                }
+            )
+            page_count += 1
+        if page_count == 0:
+            break
+    return jobs
 
 
 def parse_applicant_count(text: str) -> int | None:
@@ -525,7 +747,7 @@ def wait_for_job_cards(page):
     last_error = None
     for selector in JOB_CARD_SELECTORS:
         try:
-            page.wait_for_selector(selector, timeout=15000)
+            page.wait_for_selector(selector, timeout=6000)
             cards = page.locator(selector)
             if cards.count() > 0:
                 return cards
@@ -613,6 +835,7 @@ def extract_jobs(page, search_query: str) -> list[dict[str, str]]:
                 "link": link or "Link not found",
                 "applicants": applicant_text,
                 "search": search_query,
+                "source": "LinkedIn",
             }
         )
     return jobs
@@ -634,10 +857,17 @@ def job_to_ui_row(job: dict) -> dict:
             if part
         ),
         "weak_vs_jd": ", ".join(job.get("missed", [])[:6]),
-        "note": (
-            "JD was hidden (login wall). Score used the title only."
-            if job.get("had_description") is False
-            else (f"JD asks extra: {', '.join(job['jd_gaps'])}" if job.get("jd_gaps") else "")
+        "note": " | ".join(
+            part
+            for part in [
+                job.get("source", ""),
+                (
+                    "JD was hidden (login wall). Score used the title only."
+                    if job.get("had_description") is False
+                    else (f"JD asks extra: {', '.join(job['jd_gaps'])}" if job.get("jd_gaps") else "")
+                ),
+            ]
+            if part
         ),
     }
 
@@ -898,15 +1128,46 @@ def run_agent(role_id: str) -> int:
         seen: set[str] = set()
         try:
             publish_ui(found, f"{label}: searching LinkedIn", True, role)
-            page.goto(build_search_url(role), wait_until="domcontentloaded", timeout=45000)
-            dismiss_cookie_banner(page)
-            for job in extract_jobs(page, role):
-                key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                found.append(job)
-                publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
+            try:
+                for job in extract_linkedin_guest_jobs(role):
+                    key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    found.append(job)
+                    publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
+            except Exception as exc:
+                publish_ui(found, f"{label}: LinkedIn guest search failed: {exc}", True, role)
+                print(f"\nLinkedIn guest search failed.\n{exc}", file=sys.stderr)
+            try:
+                page.goto(build_search_url(role), wait_until="domcontentloaded", timeout=20000)
+                dismiss_cookie_banner(page)
+                for job in extract_jobs(page, role):
+                    key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    found.append(job)
+                    publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
+            except PlaywrightTimeoutError as exc:
+                publish_ui(found, f"{label}: LinkedIn browser timed out; using guest results", True, role)
+                print(f"\nLinkedIn browser timed out.\n{exc}", file=sys.stderr)
+
+            publish_ui(found, f"{label}: searching Instahyre", True, role)
+            try:
+                for job in extract_instahyre_jobs(role_id, config["title_fit_fn"]):
+                    key = job["link"] if job["link"] != "Link not found" else f"instahyre|{job['title']}|{job['company']}"
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    found.append(job)
+                    publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
+            except Exception as exc:
+                publish_ui(found, f"{label}: Instahyre search failed: {exc}", True, role)
+                print(f"\nInstahyre search failed.\n{exc}", file=sys.stderr)
+
+            if not found:
+                raise PlaywrightTimeoutError("No jobs found on LinkedIn or Instahyre.")
             attach_resume_scores(page, found, config)
             publish_ui(found, f"{label}: done.", False, role)
         except PlaywrightTimeoutError as exc:
