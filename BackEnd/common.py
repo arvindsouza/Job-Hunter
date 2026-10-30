@@ -29,6 +29,7 @@ from llm import (
     load_env,
 )
 from resume_extract import list_resume_summaries, load_profile, save_resume
+from resume_tailor import tailor_resume_pdf
 
 load_env()
 
@@ -618,6 +619,8 @@ def fetch_job_details(page, url: str) -> dict:
         guest = fetch_linkedin_guest_details(url)
         if guest.get("description"):
             return guest
+    if page is None:
+        return details
     try:
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1500)
@@ -953,7 +956,6 @@ def job_to_ui_row(job: dict) -> dict:
         "note": " | ".join(
             part
             for part in [
-                job.get("source", ""),
                 job.get("note", ""),
                 (
                     "JD was hidden (login wall). Score used the title only."
@@ -1122,6 +1124,35 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json({"error": "max_pulls must be a number"}, 400)
                     return
             self._send_json(save_settings(body))
+            return
+        if parsed.path == "/api/tailor":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                self._send_json({"error": "Invalid request"}, 400)
+                return
+            role = str(body.get("role") or "").lower()
+            title = str(body.get("title") or "").strip()
+            company = str(body.get("company") or "").strip()
+            link = str(body.get("link") or "").strip()
+            if role not in ROLE_META:
+                self._send_json({"error": "role must be em or tpm"}, 400)
+                return
+            if not title or not company:
+                self._send_json({"error": "title and company are required"}, 400)
+                return
+            details = fetch_job_details(None, link)
+            try:
+                result = tailor_resume_pdf(role, title, company, details.get("description") or "")
+            except Exception as exc:
+                self._send_json({"error": str(exc)}, 400)
+                return
+            self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/run":
             length = int(self.headers.get("Content-Length") or 0)

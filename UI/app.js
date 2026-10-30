@@ -109,9 +109,18 @@ function renderTable(jobs, running, emptyRun) {
           <td>${dash(job.company)}</td>
           <td>${link}</td>
           <td class="rating ${ratingClass(job.rating)}">${ratingLabel(job.rating)}</td>
-          <td>${dash(job.why)}</td>
-          <td>${dash(job.weak_vs_jd)}</td>
-          <td>${dash(job.note)}</td>
+          <td class="col-tailor">
+            <button
+              type="button"
+              class="tailor-btn"
+              data-title="${escapeHtml(job.title || "")}"
+              data-company="${escapeHtml(job.company || "")}"
+              data-link="${escapeHtml(job.link || "")}"
+            >Tailor resume</button>
+          </td>
+          <td class="col-why">${dash(job.why)}</td>
+          <td class="col-weak">${dash(job.weak_vs_jd)}</td>
+          <td class="col-note">${dash(job.note)}</td>
         </tr>
       `;
     })
@@ -126,6 +135,7 @@ function renderTable(jobs, running, emptyRun) {
             <th class="col-company">Company</th>
             <th class="col-link">Link</th>
             <th class="col-rating">Rating</th>
+            <th class="col-tailor">Resume</th>
             <th class="col-why">Why</th>
             <th class="col-weak">Weak vs JD</th>
             <th class="col-note">Note</th>
@@ -435,6 +445,47 @@ document.querySelector(".nav-tabs").addEventListener("click", (event) => {
   }
   event.preventDefault();
   setView(button.dataset.view, true);
+});
+
+document.getElementById("jobs-table").addEventListener("click", async (event) => {
+  const button = event.target.closest(".tailor-btn");
+  if (!button || (currentView !== "em" && currentView !== "tpm")) {
+    return;
+  }
+  const statusEl = document.getElementById("live-status");
+  button.disabled = true;
+  const original = button.textContent;
+  button.textContent = "Tailoring…";
+  try {
+    const response = await fetch("/api/tailor", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: currentView,
+        title: button.dataset.title || "",
+        company: button.dataset.company || "",
+        link: button.dataset.link || "",
+      }),
+    });
+    let payload = {};
+    try {
+      payload = await response.json();
+    } catch {
+      payload = {};
+    }
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || `HTTP ${response.status}`);
+    }
+    statusEl.textContent = `Saved tailored resume: ${payload.filename}`;
+    statusEl.classList.remove("error");
+    statusEl.classList.add("done");
+  } catch (error) {
+    statusEl.textContent = error.message || "Could not tailor resume.";
+    statusEl.classList.add("error");
+  } finally {
+    button.disabled = false;
+    button.textContent = original;
+  }
 });
 
 document.getElementById("fresh-run-btn").addEventListener("click", async () => {
