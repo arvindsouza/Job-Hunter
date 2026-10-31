@@ -470,7 +470,7 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
         return company_url, False
     return linkedin_url, easy_apply
 
-
+ 
 def is_instahyre_url(url: str) -> bool:
     return bool(url) and "instahyre.com" in urlparse(url).netloc.lower()
 
