@@ -1,155 +1,219 @@
 window.JOB_DATA = {
   "Software Engineering Manager": [
     {
-      "title": "Manager Product Development",
-      "company": "Itron, Inc.",
-      "link": "https://in.linkedin.com/jobs/view/manager-product-development-at-itron-inc-4484950157",
+      "title": "Software Development Manager",
+      "company": "Radancy",
+      "link": "https://in.linkedin.com/jobs/view/software-development-manager-at-radancy-4466325602",
       "easy_apply": false,
-      "rating": 86,
-      "why": "The role requires a hands-on Engineering Manager with at least 2 years of people management and 4 years of technical leadership, which aligns neatly with Arvin's 8-year progression from full-stack engineering to EM. Itron's focus on software and AI for energy and utility clients mirrors Arvin's career delivering ML and industrial automation platforms to tier-1 energy enterprises like BP and Exxon. While the JD mentions an AWS, Python, or Java preference, it explicitly notes that exact tools matter less than architectural depth, making Arvin's GCP, .NET, and TypeScript expertise readily transferable. The only minor gap is explicit evidence of AWS usage and concrete quantification of team size.",
-      "weak_vs_jd": "Direct hands-on experience with AWS cloud services (background is primarily GCP and Alibaba Cloud), Explicit quantification of direct report headcount managed",
-      "note": "Ensure your resume highlights your hands-on code review, system design docs, and AWS transferability, as Itron explicitly insists this is not a coordination-only role."
-    },
-    {
-      "title": "Engineering Manager",
-      "company": "ServiceChannel",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-servicechannel-4484957292",
-      "easy_apply": false,
-      "rating": 85,
-      "why": "ServiceChannel is specifically seeking an Engineering Manager to guide architecture and delivery across a .NET backend and React frontend ecosystem, which directly mirrors Arvin's core full-stack foundation. Arvin brings proven experience managing engineering roadmaps, cross-functional execution, and enterprise-grade deployments in industrial and predictive tech domains that resonate with Fortive's broader portfolio. The primary slight gap is the JD's requirement for 9+ years of hands-on development alongside 3+ years in management, whereas Arvin has roughly 8 total years of overall experience. However, his strong overlap in modern .NET, React/TypeScript, SQL, and Agile delivery leadership makes him an outstanding fit.",
-      "weak_vs_jd": "Explicit 9+ years of hands-on software development experience (candidate has approximately 8 total career years), Deep native Microsoft Azure platform services experience (candidate's cloud background emphasizes GCP and Alibaba Cloud), Experience with mobile client API/SDK support and dedicated observability tooling (LaunchDarkly, Elastic Stack)",
-      "note": "Ensure your resume explicitly highlights direct report headcount and quantifies team leadership metrics to satisfy people management criteria upfront."
-    },
-    {
-      "title": "Senior Manager Software Engineering",
-      "company": "Caterpillar Inc.",
-      "link": "https://in.linkedin.com/jobs/view/senior-manager-software-engineering-at-caterpillar-inc-4484938445",
-      "easy_apply": false,
-      "rating": 82,
-      "why": "Caterpillar\u2019s Cat Digital Helios Platform serves industrial heavy machinery ecosystems, providing a direct domain match with Arvin's industrial automation, Oil & Gas, and smart infrastructure background. The role offers the exact management scope Arvin seeks: leading multiple teams, building reusable platform APIs on cloud infrastructure, and partnering with global enterprise stakeholders.",
-      "weak_vs_jd": "Explicit experience managing second-line Engineering Managers",
-      "note": "Highlight industrial platform deployments and enterprise client integrations with BP/Exxon."
-    },
-    {
-      "title": "Manager, Software Development, Pre Station Planning Technology",
-      "company": "Amazon",
-      "link": "https://in.linkedin.com/jobs/view/manager-software-development-pre-station-planning-technology-at-amazon-4485222470",
-      "easy_apply": false,
-      "rating": 75,
-      "why": "The candidate meets the seniority requirements and demonstrates strong leadership in managing end-to-end product lifecycles and cross-functional stakeholders. While the candidate's primary domain is industrial automation rather than logistics, the underlying technical challenges\u2014specifically ML, capacity planning, and distributed systems\u2014are highly transferable to the Pre Station Planning team. The main risk is the candidate's heavy reliance on the Microsoft/.NET ecosystem, which may require a transition to Amazon's typical tech stack.",
-      "weak_vs_jd": "Large-scale web services/distributed systems at Amazon scale, Experience with non-Microsoft tech stacks (Java/Python/Go), Quantified direct report headcount",
-      "note": "The candidate should emphasize their experience with distributed systems and ML scalability to mitigate the perceived .NET-centricity during interviews."
+      "rating": 88,
+      "why": "Radancy explicitly calls out talent acquisition, team onboarding, operational efficiency, and hands-on C#/.NET development as core responsibilities. The candidate's tailored resume demonstrates 3 years as an EM leading recruitment, onboarding, mentorship, and architecture in C# and .NET. Furthermore, the candidate exhibits experience leading cross-functional teams in an Agile framework and collaborating globally across time zones. Overall, this is an exceptionally tight alignment across both people management and technical requirements.",
+      "weak_vs_jd": "Explicit experience with recruitment technology domain, Direct mention of Bangalore location management context",
+      "note": "Re-analyzed with tailored resume (Radancy-Software_Development_Manager.pdf)",
+      "reassessed": true
     },
     {
       "title": "Software Development Manager",
       "company": "Clearwater Analytics",
       "link": "https://in.linkedin.com/jobs/view/software-development-manager-at-clearwater-analytics-4474808714",
       "easy_apply": false,
-      "rating": 75,
-      "why": "Arvin exceeds the core experience requirements with 8 years in software engineering and strong leadership tenure managing production delivery. While his domain background is centered around industrial automation and ML platforms rather than financial analytics, his deep experience with C#/.NET satisfies the requirement for Java or similar object-oriented languages. Additionally, his experience with GCP, relational databases, and high-performance system design aligns with the distributed system needs of Clearwater Analytics, though he will need to navigate a new business domain.",
-      "weak_vs_jd": "Direct experience in financial services, investment reporting, or Wall Street technology domains, Explicit experience with NoSQL databases alongside relational database usage, Java microservices experience (candidate stack leans strongly toward C#/.NET ecosystems)",
-      "note": "Arvin should highlight the transferability of his high-throughput industrial system architecture and C#/.NET background to Clearwater's Java-based financial analytics platform."
-    },
-    {
-      "title": "Software Engineer - Manager (SE)",
-      "company": "PwC Acceleration Center India",
-      "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-se-at-pwc-acceleration-center-india-4456926858",
-      "easy_apply": false,
-      "rating": 73,
-      "why": "The tailored resume demonstrates exceptional alignment with PwC's call for full-stack architecture, Agile delivery, client stakeholder management, and team mentorship. Arvin also aligns with PwC's push for innovation through his experience with AI-assisted development tools and leading teams through technical ambiguity. The primary gap is the strict experience band, as PwC asks for 12\u201314 years while Arvin brings approximately 10 years, along with unverified experience in Java and Python.",
-      "weak_vs_jd": "12 to 14 years of relevant software engineering experience (resume demonstrates ~10 years), Hands-on experience with Java and Python languages, Specific exposure to Azure AI Services (Agentic AI) and Azure Functions",
-      "note": "PwC AC India frequently uses YOE bands for managerial grading, but Arvin's direct title match as Software Engineering Manager and client-facing record justify submitting an application. | Re-analyzed with tailored resume (PwC_Acceleration_Center_India-Software_Engineer_-_Manager_(SE).pdf)",
+      "rating": 85,
+      "why": "The job description highlights leading teams through all SDLC phases, cultivating personnel, driving agile delivery, and managing mission-critical client solutions. The tailored resume effectively mirrors this by emphasizing 8 years of SDLC leadership, formal mentorship, resource allocation, and rollouts to tier-1 enterprise clients. While Clearwater serves institutional investors and asset managers, the candidate's deep background in mission-critical analytics platforms translates smoothly.",
+      "weak_vs_jd": "Direct financial/fintech domain experience (e.g., fixed income, accounting, asset management), Direct Wall Street or trading client interactions",
+      "note": "Re-analyzed with tailored resume (Clearwater_Analytics-Software_Development_Manager.pdf)",
       "reassessed": true
     },
     {
+      "title": "Manager - AI Engineering",
+      "company": "ZS",
+      "link": "https://in.linkedin.com/jobs/view/manager-ai-engineering-at-zs-4480675120",
+      "easy_apply": false,
+      "rating": 76,
+      "why": "ZS's Engineering Manager \u2013 AI Engineering role requires owning end-to-end technical delivery for GenAI platforms, balancing hands-on leadership with team scaling. This directly mirrors Arvin's leadership on machine learning analytics platforms (n.Lift) and computer vision systems (n.Vision). His ability to bridge AI development with executive client consulting aligns perfectly with ZS's consulting and technology model.",
+      "weak_vs_jd": "Management consulting industry background",
+      "note": "His hands-on experience leading AI and machine learning analytics platforms makes this an ideal target role."
+    },
+    {
+      "title": "SOFTWARE DEVELOPMENT MANAGER, Software Development",
+      "company": "Amazon Web Services (AWS)",
+      "link": "https://in.linkedin.com/jobs/view/software-development-manager-software-development-at-amazon-web-services-aws-4465361271",
+      "easy_apply": false,
+      "rating": 74,
+      "why": "AWS is seeking a Software Development Manager for AWS Infrastructure Services' Supply Chain Automation (AWS_SCM) platform. The candidate's resume shows strong leadership in industrial automation, telemetry dashboards, security systems, and backend services for inventory forecasting (Dubai Health Authority). While the candidate has not directly managed hyperscale cloud data center supply chain logistics or native AWS infrastructure (GCP/Alibaba Cloud are listed instead), the technical management skills and domain adjacent industrial telemetry experience provide a credible baseline.",
+      "weak_vs_jd": "Direct AWS ecosystem experience (resume lists GCP and Alibaba Cloud), Hyperscale data center hardware/supply-chain operations, Familiarity with Amazon-specific leadership principles and bar raiser standards",
+      "note": "Lack of direct AWS experience is a visible gap for an AWS SDM opening. | Re-analyzed with tailored resume (Amazon_Web_Services_(AWS)-SOFTWARE_DEVELOPMENT_MANAGER,_Software_Development.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Engineering Manager \u2013 AI Engineering",
+      "company": "Meesho",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-%E2%80%93-ai-engineering-at-meesho-4447789682",
+      "easy_apply": false,
+      "rating": 72,
+      "why": "Meesho requires an Engineering Manager to architect scalable AI platforms handling peak 1M+ inferences/sec, GPU kernel tuning, distributed training, and inference optimization. The candidate demonstrates genuine AI platform leadership with n.Vision and Nubyla, using C++, ONNX runtime, and NATS for low-latency inference (<100ms) and cloud cost optimization. However, the candidate's background lacks explicit evidence of GPU kernel tuning, distributed deep-learning training clusters, or internet-scale consumer traffic (millions of users/sellers).",
+      "weak_vs_jd": "Ultra-high scale inference (1M+ QPS e-commerce volume), GPU kernel tuning and memory/IO bandwidth optimization, Distributed training and multi-GPU fleet management, Open-weight LLM optimization and embedding search",
+      "note": "Candidate must emphasize architectural depth in model deployment to bridge the consumer e-commerce scale gap. | Re-analyzed with tailored resume (Meesho-Engineering_Manager_\u2013_AI_Engineering.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Engineering Manager - Flash Array",
+      "company": "Everpure",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-flash-array-at-everpure-4468376744",
+      "easy_apply": false,
+      "rating": 69,
+      "why": "Everpure requires leading high-performing engineering teams to build scalable, high-performance systems software with strict reliability standards. Arvin's background in architecting low-latency platforms (like n.Vision with sub-100ms inference) and overseeing global production deployments for tier-1 energy clients demonstrates his ability to handle mission-critical systems. His agile workflow optimization and mentorship fit their cultural goals.",
+      "weak_vs_jd": "Enterprise storage systems and FlashArray hardware domain experience",
+      "note": "His experience with mission-critical industrial deployments provides a strong foundation for high-reliability systems."
+    },
+    {
+      "title": "Engineering Manager, Software Engineering - CD",
+      "company": "Harness",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-software-engineering-cd-at-harness-4480633901",
+      "easy_apply": false,
+      "rating": 68,
+      "why": "Harness is looking for an EM to lead the core Cloud Platform powering Continuous Delivery (CD) and developer-facing infrastructure products. The resume highlights strong experience in Azure DevOps release cadences, production deployments, and cloud cost optimization across GCP and Alibaba Cloud. However, the role leans heavily into developer tooling, core distributed infrastructure, and CD product internals, whereas the candidate's experience is primarily application/enterprise software delivery rather than building commercial developer infrastructure platforms.",
+      "weak_vs_jd": "Direct experience building developer platform infrastructure products (CD/CI platforms), Deep container orchestration / Kubernetes platform foundations, AI-driven software delivery outer loop tooling",
+      "note": "Re-analyzed with tailored resume (Harness-Engineering_Manager,_Software_Engineering_-_CD.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Software Development Manager, AFT External Fulfillment",
+      "company": "Amazon",
+      "link": "https://in.linkedin.com/jobs/view/software-development-manager-aft-external-fulfillment-at-amazon-4483769818",
+      "easy_apply": false,
+      "rating": 68,
+      "why": "Arvin's background in overseeing end-to-end program lifecycles and managing multi-team backlogs maps well to Amazon's fulfillment technology requirements. While his core technical foundation is in C#/.NET rather than high-scale multi-tier web services, his leadership scope, agile execution experience, and operational background provide a strong bridge. His experience collaborating with enterprise tier-1 clients translates well into handling complex operational metrics and distributed stakeholder networks.",
+      "weak_vs_jd": "Extensive experience managing high-9s availability multi-tier web services at hyper-scale, Deep web technologies stack (Java/Node.js)",
+      "note": "Amazon often heavily weights distributed web service architecture in technical rounds, which differs from Arvin's desktop and industrial backend focus."
+    },
+    {
       "title": "Manager, Software Engineering",
-      "company": "Thermo Fisher Scientific",
-      "link": "https://in.linkedin.com/jobs/view/manager-software-engineering-at-thermo-fisher-scientific-4470576025",
+      "company": "Planview",
+      "link": "https://in.linkedin.com/jobs/view/manager-software-engineering-at-planview-4474404797",
       "easy_apply": false,
       "rating": 68,
-      "why": "Arvin satisfies the core management criteria with proven experience driving sprint cadences, resource capacity planning, and people leadership. His background delivering production ML and computer vision platforms matches Thermo Fisher's emphasis on AI integration and platform engineering. However, the job description explicitly asks for a track record with Java-based web applications, whereas Arvin's architectural history is predominantly anchored in the .NET, C#, and C++ ecosystem. While he falls slightly short of the standard 10+ years mark at 8 years, his recent Engineering Manager title satisfies the alternative technical leadership requirement.",
-      "weak_vs_jd": "Hands-on background developing and building Java-based web applications, Explicit experience with relational engines like Oracle or PostgreSQL (listed generally as SQL), Explicit experience managing geographically distributed engineering teams",
-      "note": "Be prepared to address the tech stack pivot, highlighting that architectural design patterns and EM fundamentals transfer cleanly from .NET to Java web environments."
+      "why": "Planview focuses on strategic portfolio management and enterprise software solutions that connect strategic intent with business outcomes, matching Arvin's experience bridging engineering with executive leadership. His history of overseeing end-to-end program lifecycles for tier-1 enterprise clients aligns well with Planview's customer base. His agile management style and capacity planning expertise fit their operational expectations.",
+      "weak_vs_jd": "Experience in enterprise strategic portfolio management software domains",
+      "note": "His enterprise client management and program leadership make this a smooth organizational fit."
     },
     {
-      "title": "FAE Manager \u2013 Embedded Software Tools (Qt, Wind River, COTS)",
-      "company": "CoreEL Technologies",
-      "link": "https://in.linkedin.com/jobs/view/fae-manager-%E2%80%93-embedded-software-tools-qt-wind-river-cots-at-coreel-technologies-4484502442",
+      "title": "Manager, Software Engineering",
+      "company": "BetaNXT",
+      "link": "https://in.linkedin.com/jobs/view/manager-software-engineering-at-betanxt-4412670830",
       "easy_apply": false,
       "rating": 68,
-      "why": "Arvin has a strong track record combining pre-sales scoping with hands-on C++ and edge system delivery. CoreEL requires a Manager to lead Field Application Engineers across embedded tools (Qt, RTOS, COTS). Arvin's technical architecture background and client-facing skills make him capable in this role, though it shifts his focus from internal product engineering to technical sales enablement.",
-      "weak_vs_jd": "Qt framework and Wind River RTOS specialization, Dedicated Field Application Engineering leadership",
-      "note": "A good fit if open to a pre-sales / FAE management track."
+      "why": "BetaNXT seeks an engineering manager for their Data Delivery team to own cloud-hosted data-as-a-service platforms built on Snowflake. The role explicitly calls for hands-on technical leadership and deep ownership, matching Arvin's management style of diving deep when required and balancing architecture with execution. His background in real-time data monitoring platforms and cloud infrastructure optimization maps well to cloud data delivery.",
+      "weak_vs_jd": "Snowflake data warehouse ecosystem depth",
+      "note": "His background in real-time data monitoring platforms provides good technical alignment for cloud data services."
     },
     {
-      "title": "AI Technical Lead",
-      "company": "Quest Global",
-      "link": "https://in.linkedin.com/jobs/view/ai-technical-lead-at-quest-global-4484169724",
+      "title": "Engineering Manager",
+      "company": "Lagrange Point International",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-lagrange-point-international-4481689497",
+      "easy_apply": false,
+      "rating": 67,
+      "why": "This Series-B enterprise security startup role requires architectural authority, cross-functional leadership, and building high-scale, low-latency systems. Arvin's startup background at Nybl, where he scaled teams and drove end-to-end program lifecycles for enterprise clients, provides relevant experience. Although his primary domain is industrial automation rather than identity security, his startup agility and architectural depth align well.",
+      "weak_vs_jd": "Enterprise identity security and AI agent domain experience",
+      "note": "His early-to-mid stage startup background and architectural ownership are great selling points for a Series-B environment."
+    },
+    {
+      "title": "Manager, Engineering",
+      "company": "Navan",
+      "link": "https://in.linkedin.com/jobs/view/manager-engineering-at-navan-4466071518",
       "easy_apply": false,
       "rating": 66,
-      "why": "Quest Global seeks an AI Lead to build and deploy computer vision and predictive analytics solutions, matching Arvin's work on n.Vision and n.Lift. The role includes task allocation and mentoring. However, it leans more toward technical execution and ML engineering leadership rather than broad organizational management.",
-      "weak_vs_jd": "Dedicated people management organizational scope, Deep hands-on PyTorch/TensorFlow training experience",
-      "note": "Focus on the computer vision and ONNX runtime optimization work from your background."
+      "why": "Navan requires managing a mid-sized full-stack team and driving agile delivery, which directly mirrors Arvin's leadership style and team-scaling experience at Nybl. While the specific stack (Java/Spring Boot) differs from his C#/.NET background, the fundamental principles of backend engine design and enterprise admin portals are very similar. His strong focus on stakeholder communication and talent acquisition fits the team's needs.",
+      "weak_vs_jd": "Java and Spring Boot enterprise ecosystem experience",
+      "note": "The stack difference is minor given his strong backend architectural fundamentals and proven EM track record."
+    },
+    {
+      "title": "Manager of Software Engineering - Java, Python, Databases, AI",
+      "company": "JPMorganChase",
+      "link": "https://in.linkedin.com/jobs/view/manager-of-software-engineering-java-python-databases-ai-at-jpmorganchase-4484089969",
+      "easy_apply": false,
+      "rating": 66,
+      "why": "JPMorganChase requires an engineering manager to lead multiple teams, manage implementation activities, and drive enterprise-authorized AI-assisted engineering practices. Arvin's experience bridging executive leadership, driving pre-sales, and managing complex multi-team backlogs equips him well for a large financial institution environment. While his primary background is industrial rather than financial, his enterprise governance and AI adoption experience provide strong crossover.",
+      "weak_vs_jd": "Financial services and wealth management domain experience",
+      "note": "His experience with enterprise client delivery and AI tooling adoption makes him a credible candidate for this CTO office role."
+    },
+    {
+      "title": "Software Development Manager, LMDT- WW, Flex Offer Journey",
+      "company": "Amazon",
+      "link": "https://in.linkedin.com/jobs/view/software-development-manager-lmdt-ww-flex-offer-journey-at-amazon-4476338821",
+      "easy_apply": false,
+      "rating": 65,
+      "why": "Amazon Flex focuses on logistics automation and operational optimization, closely mirroring Arvin's industrial automation and SCADA background where software interacts directly with physical operations. His experience scaling engineering organizations and owning complex delivery roadmaps aligns nicely with the team's goals. Though the specific web tech stack differs, his systems-level thinking and lifecycle management are directly transferable.",
+      "weak_vs_jd": "Hyper-scale consumer marketplace architecture experience, Cloud-native web service depth",
+      "note": "Highlighting his experience with real-time data monitoring and automation will help bridge the gap in marketplace systems."
+    },
+    {
+      "title": "Software Engineering Manager, Systems Infrastructure",
+      "company": "LinkedIn",
+      "link": "https://in.linkedin.com/jobs/view/software-engineering-manager-systems-infrastructure-at-linkedin-4467071477",
+      "easy_apply": false,
+      "rating": 65,
+      "why": "LinkedIn's infrastructure team builds application delivery platforms, data storage systems, and AI platforms, intersecting with Arvin's work on AI platform architecture, ONNX runtime, and real-time messaging. While LinkedIn operates at consumer web scale compared to Arvin's industrial scale, his technical background in backend performance optimization and system architecture provides a solid foundation. His leadership experience matches their expectations for hybrid engineering managers.",
+      "weak_vs_jd": "Consumer web-scale distributed infrastructure background (Kafka, Pinot, etc.)",
+      "note": "His AI platform and backend performance optimization experience provide good leverage during technical reviews."
+    },
+    {
+      "title": "Manager, Engineering",
+      "company": "Arctic Wolf",
+      "link": "https://in.linkedin.com/jobs/view/manager-engineering-at-arctic-wolf-4474248921",
+      "easy_apply": false,
+      "rating": 64,
+      "why": "Arctic Wolf requires an engineering manager to lead cross-functional teams building secure, scalable platforms, which matches Arvin's leadership and agile execution history. However, the technical stack leans heavily on Go, Terraform, AWS, and modern web frameworks, whereas Arvin's core experience is in C#, .NET, and industrial cloud platforms (GCP/Alibaba). His security and automation background provides a useful conceptual bridge.",
+      "weak_vs_jd": "Go programming proficiency, AWS and Terraform infrastructure management",
+      "note": "Strong management fit, but technical stack alignment requires careful positioning during interviews."
     },
     {
       "title": "Software Development Manager, AWS Infrastructure Supply Chain",
       "company": "Amazon Web Services (AWS)",
       "link": "https://in.linkedin.com/jobs/view/software-development-manager-aws-infrastructure-supply-chain-at-amazon-web-services-aws-4467934033",
       "easy_apply": false,
-      "rating": 65,
-      "why": "Arvin brings genuine engineering leadership experience, having successfully directed teams delivering ML analytics and vision platforms across cloud environments. However, his total experience of 8 years sits right at the minimum threshold for an L6 SDM role at AWS, which typically seeks deep experience with high-throughput distributed web services. Additionally, his core technical stack leans heavily toward Microsoft/.NET/WPF and industrial edge systems rather than AWS-native microservices architectures, requiring him to emphasize his cloud platform and distributed systems scope during interviews.",
-      "weak_vs_jd": "AWS ecosystem experience and hyperscale distributed systems architecture, Demonstrated experience with Amazon-style written narratives (PR/FAQs), Quantified direct-report team size and managing multi-tiered engineering teams, Supply chain domain experience and high-volume event-driven architectures",
-      "note": "Emphasize high-throughput backend services, distributed systems metrics, and structured writing/mechanism leadership in the resume to better target AWS L6 expectations."
+      "rating": 64,
+      "why": "Arvin brings valuable experience managing ML products, capacity planning, and cloud deployment across enterprise environments. However, AWS L6 SDM roles demand proven scale in distributed multi-region infrastructure and deep familiarity with large-scale supply chain domain paradigms. His technical background relies more on C#/.NET and edge/industrial platforms than hyper-scale distributed web services.",
+      "weak_vs_jd": "Hyper-scale distributed systems architecture, AWS ecosystem depth, Supply chain domain expertise",
+      "note": "AWS L6 interviews heavily emphasize Amazon Leadership Principles and system architecture at hyper-scale."
     },
     {
-      "title": "GenAI Full Stack-Manager",
-      "company": "PwC Acceleration Center India",
-      "link": "https://in.linkedin.com/jobs/view/genai-full-stack-manager-at-pwc-acceleration-center-india-4475748032",
-      "easy_apply": false,
-      "rating": 63,
-      "why": "Arvin meets the 8-year seniority threshold and brings solid experience managing client-facing delivery, technical roadmaps, and full-stack web applications. However, this PwC manager role is heavily specialized around Generative AI user experiences\u2014such as LLM streaming UIs, conversational UX, and human-in-the-loop workflows\u2014whereas Arvin's AI background centers on computer vision and predictive industrial analytics. Additionally, the backend stack emphasizes Python, Node.js, and Java Spring Boot rather than Arvin's native C#/.NET core.",
-      "weak_vs_jd": "Generative AI / LLM architecture (streaming UIs, conversational UX, human-in-the-loop patterns), Backend governance in Node.js, Java Spring Boot, or Python microservices, Front-end automated testing frameworks (Jest, Cypress, Playwright), Documented Master's degree (explicitly listed as a must-have by PwC)",
-      "note": "PwC Acceleration Centers strictly filter on educational prerequisites ('Bachelor's & Master's Degree') and hands-on LLM full-stack tooling."
-    },
-    {
-      "title": "Manager II, Software Engineering",
-      "company": "Toast",
-      "link": "https://in.linkedin.com/jobs/view/manager-ii-software-engineering-at-toast-4467962056",
+      "title": "Software Development Manager, Prime Video Sports Availability",
+      "company": "Prime Video & Amazon MGM Studios",
+      "link": "https://in.linkedin.com/jobs/view/software-development-manager-prime-video-sports-availability-at-prime-video-amazon-mgm-studios-4455791866",
       "easy_apply": false,
       "rating": 62,
-      "why": "Arvin matches Toast's requirement for an entrepreneurial engineering manager who can mentor talent, partner with product managers, and drive execution rigor. However, the Toast Advertising team specifically seeks deep experience with SaaS operating models and third-party advertising platforms (e.g., Google and Meta APIs), which diverges significantly from Arvin's enterprise industrial automation and SCADA background. Furthermore, while Arvin is comfortable in React, Toast's backend is centered on Java, Kotlin, and modern distributed databases rather than Arvin's core .NET/C# foundation. He can certainly manage the delivery process, but he would face a steep learning curve regarding Toast's specific stack and business domain.",
-      "weak_vs_jd": "Experience building products with deep dependencies on 3rd-party digital advertising APIs (Google Ads, Meta Ads), Backend proficiency in Java and Kotlin microservices, Experience delivering multi-tenant consumer/B2B SaaS marketing or hospitality platforms, Hands-on exposure to modern persistence technologies like DynamoDB and GraphQL",
-      "note": "If applying, emphasize your experience integrating heterogeneous third-party systems (e.g., CN-Shield) and your ability to rapidly ramp up on new backend stacks."
+      "why": "Prime Video Sports emphasizes real-time performance, monitoring, and leveraging AI/predictive analytics, areas that intersect with Arvin's work on ONNX runtime and real-time monitoring platforms. However, the scale of live sports streaming infrastructure is vastly different from his industrial Oil & Gas deployments. His management capabilities fit, but the domain shift to consumer video delivery is substantial.",
+      "weak_vs_jd": "Large-scale video streaming and live broadcast infrastructure experience, AWS cloud-native depth",
+      "note": "His AI and real-time monitoring background is a strong selling point for the predictive analytics aspects of the role."
     },
     {
-      "title": "Engineering Manager, Managed Gateways Infrastructure",
-      "company": "Kong",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-managed-gateways-infrastructure-at-kong-4485222807",
+      "title": "Engineering Manager",
+      "company": "HiroJet",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-hirojet-4482906036",
       "easy_apply": false,
       "rating": 62,
-      "why": "The role demands hands-on ownership of high-availability (99.99%) multi-tenant SaaS control planes and edge gateways. While Arvin has cloud deployment experience on GCP/Azure and edge runtime exposure, his background is primarily focused on industrial application platforms and computer vision rather than cloud-native API/mesh infrastructure.",
-      "weak_vs_jd": "Deep API/AI Gateway infrastructure experience, High-availability 99.99% multi-tenant SaaS systems, Go programming language ecosystem",
-      "note": "Requires demonstrating deep distributed systems infrastructure expertise at SaaS scale."
+      "why": "HiroJet is a scaling tech startup looking for an EM with early-stage startup experience, aligning with Arvin's background of growing Nybl. However, the role mandates 5+ years of hands-on Python coding and web frameworks like FastAPI or Flask, whereas Arvin's primary coding stack is C#, .NET, and C++. While his leadership and agile practices fit, the strict Python and web stack requirement is a mismatch.",
+      "weak_vs_jd": "5+ years of hands-on Python programming experience, FastAPI/Flask web framework depth",
+      "note": "His startup leadership experience is a strong plus, but the Python coding requirement is a hurdle."
     },
     {
-      "title": "Sr. Manager, Robotics (AI2537)",
-      "company": "SiMa.ai",
-      "link": "https://in.linkedin.com/jobs/view/sr-manager-robotics-ai2537-at-sima-ai-4485256668",
+      "title": "Engineer Manager",
+      "company": "Macromill",
+      "link": "https://www.instahyre.com/job-447856-engineer-manager-at-macromill-bangalore/",
       "easy_apply": false,
-      "rating": 60,
-      "why": "Arvin\u2019s work on low-latency computer vision using ONNX and C++ overlaps nicely with edge perception concepts at SiMa.ai. However, this Senior Manager role requires 12+ years of experience (Arvin has 8) and specialized depth in visual odometry, SLAM, and sensor fusion for robotics platforms, which goes beyond his smart security and SCADA computer vision experience.",
-      "weak_vs_jd": "12+ years total experience requirement, Autonomous mobile robotics / SLAM / sensor fusion expertise, Silicon and hardware platform co-design",
-      "note": "Seniority and specialized robotics domain requirements create a significant gap."
+      "rating": 61,
+      "why": "Macromill requires an engineering manager with strong Golang backend and React frontend experience to guide system design and microservices. Arvin brings excellent engineering management, architectural oversight, and agile process optimization. However, his primary backend stack is C#/.NET rather than Golang, requiring a stack transition despite his strong systems background.",
+      "weak_vs_jd": "Golang backend production experience, Deep React and TypeScript frontend execution",
+      "note": "His management capabilities are spot on, but the Golang/React stack requirement creates a technical gap."
     },
     {
-      "title": "Software Development Manager",
-      "company": "Amazon",
-      "link": "https://in.linkedin.com/jobs/view/software-development-manager-at-amazon-4476789701",
+      "title": "Engineering Manager - Backend",
+      "company": "Databricks",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-backend-at-databricks-4340800217",
       "easy_apply": false,
       "rating": 58,
-      "why": "Arvin meets the basic people management and mentoring qualifications, having led cross-functional teams, delivery pipelines, and enterprise deployments. However, Amazon's Finance as a Service (FaaS) requires extensive experience designing multi-tenant, distributed web services for high-controllership financial operations, whereas Arvin's career has centered around industrial automation, computer vision, and .NET ecosystems. Additionally, with 8 years of total software engineering experience, he is on the borderline for Amazon's requirement of 8+ years specifically leading the definition and development of multi-tier web services.",
-      "weak_vs_jd": "8+ years specifically leading definition and development of multi-tier web services, Enterprise multi-tenancy, data isolation, and financial compliance architecture, Experience within hyperscale cloud platforms (specifically AWS distributed services), Standard backend distributed microservices stacks (e.g., Java, Go) outside the .NET framework",
-      "note": "Amazon SDM loops heavily screen for System Design at hyperscale and strict behavioral alignment with Amazon Leadership Principles."
+      "why": "Databricks is looking for engineering leaders with extensive background in massive-scale distributed data systems, cloud-agnostic resource management, and big data workloads. While Arvin has strong experience with real-time data monitoring and NATS message queues, his primary domain is industrial automation and computer vision rather than hyper-scale data platforms. His leadership skills are solid, but the scale and data focus are heavier than his background reflects.",
+      "weak_vs_jd": "10+ years in large-scale distributed data/ML infrastructure, Deep data platform architecture",
+      "note": "Databricks demands deep distributed data systems experience which is outside Arvin's core industrial domain."
     },
     {
       "title": "Engineering Manager - Ecosystem",
@@ -162,74 +226,84 @@ window.JOB_DATA = {
       "note": "This position requires full-time onsite attendance at the Bangalore office (Monday to Friday) along with PST/EST timezone alignment."
     },
     {
-      "title": "Senior Engineering Manager",
-      "company": "Ethos",
-      "link": "https://in.linkedin.com/jobs/view/senior-engineering-manager-at-ethos-4458597821",
-      "easy_apply": false,
-      "rating": 58,
-      "why": "Ethos is seeking a Senior Engineering Manager specifically for web-scale platform infrastructure powered by AWS, Kafka, and TypeScript/Node.js backends. While Arvin has strong EM experience leading industrial ML and vision platforms, his background leans toward C#/.NET ecosystems, GCP/Alibaba Cloud, and domain-specific edge applications. Additionally, moving into a Senior EM position at Ethos requires demonstrated experience managing senior leads and platform-centric teams in high-growth web environments, which is a gap given Arvin's single-company EM tenure.",
-      "weak_vs_jd": "Dedicated platform engineering leadership experience (service decomposition, event schemas, internal developer enablement), Hands-on depth with AWS, Kafka, and TypeScript/Node.js backend microservices at web scale, Observability and reliability leadership with Datadog, formal SLO definitions, and postmortem workflows, Quantified track record managing team leads and senior ICs in high-growth environments",
-      "note": "Arvin would be a stronger fit for standard Engineering Manager roles or platform roles focused on C#/.NET and GCP infrastructure rather than Senior EM in an AWS/Node.js stack."
-    },
-    {
-      "title": "Engineering Manager - Data",
-      "company": "Axi",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-data-at-axi-4484909657",
-      "easy_apply": false,
-      "rating": 58,
-      "why": "Arvin has strong Azure and team leadership credentials, but Axi requires an EM to run a global data platform centered on Databricks, ClickHouse, and dbt for 24/7 financial trading. Arvin's background is in industrial analytics and computer vision platforms rather than financial data warehousing.",
-      "weak_vs_jd": "Databricks, ClickHouse, and dbt specialization, Financial brokerage / trading domain context",
-      "note": "Data stack specialization creates a gap compared to core software platform EM roles."
-    },
-    {
-      "title": "Engineering Manager (GCP)",
-      "company": "Woolworths Group International",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-gcp-at-woolworths-group-international-4484992316",
+      "title": "Development Manager",
+      "company": "Mobileum",
+      "link": "https://in.linkedin.com/jobs/view/development-manager-at-mobileum-4481680915",
       "easy_apply": false,
       "rating": 56,
-      "why": "Arvin's GCP experience and capacity planning skills match the operational orchestration demands of managing multiple squads. However, Woolworths is looking for a data products EM to oversee enterprise data pipelines using BigQuery, Airflow, Dataform, and Python. Arvin's background is broader platform and product software development rather than dedicated enterprise data warehouse engineering.",
-      "weak_vs_jd": "Dedicated Data Engineering platform stack (BigQuery, Airflow, Dataform), Python-centric data processing pipelines",
-      "note": "Role focuses primarily on operational people management for data engineering pipelines."
+      "why": "This Development Manager role requires deep Core Java expertise and telecom protocol knowledge. Arvin's technical stack is centered on C#, .NET, and C++, with domain expertise in Oil & Gas rather than telecommunications. While he brings strong backend design experience, team management, and occasional C++ code flow understanding, the specific telecom domain and Java-centric requirements create a noticeable gap.",
+      "weak_vs_jd": "Core Java enterprise application development, Telecom industry protocols (Diameter, GTP, etc.)",
+      "note": "The telecom domain and Java requirements make this a secondary choice compared to his industrial and AI roles."
     },
     {
-      "title": "Software Engineering Technical Leader",
-      "company": "Cisco",
-      "link": "https://in.linkedin.com/jobs/view/software-engineering-technical-leader-at-cisco-4485246896",
+      "title": "Manager, Software Engineering",
+      "company": "Fivetran",
+      "link": "https://in.linkedin.com/jobs/view/manager-software-engineering-at-fivetran-4449697992",
       "easy_apply": false,
-      "rating": 56,
-      "why": "While Arvin brings strong hands-on architectural chops, this position is a Principal/Lead IC role focused on setting code standards and technical design across Cisco product suites. It lacks direct people management scope, which conflicts with Arvin's must-have requirement for managing engineering teams.",
-      "weak_vs_jd": "Direct people management scope and direct report ownership, Cisco-specific enterprise software domain",
-      "note": "Lacks the formal people management responsibility requested in target criteria."
+      "rating": 55,
+      "why": "Fivetran's role involves leading the Semantic Layer team and running healthy delivery processes for modern data stack tools. Arvin brings excellent agile delivery experience, team coaching, and architectural oversight from his time at Nybl. However, his domain expertise is firmly in Oil & Gas, computer vision, and IoT, making the modern data stack and semantic layer a notable domain shift.",
+      "weak_vs_jd": "Modern data stack and analytics engineering background",
+      "note": "His general management capability is there, but the data engineering domain is quite different from industrial automation."
     },
     {
-      "title": "Senior Team Lead",
-      "company": "Yoti",
-      "link": "https://in.linkedin.com/jobs/view/senior-team-lead-at-yoti-4484998296",
+      "title": "Software Engineer - Manager (SE)",
+      "company": "PwC Acceleration Center India",
+      "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-se-at-pwc-acceleration-center-india-4456926858",
+      "easy_apply": false,
+      "rating": 55,
+      "why": "Arvin's current management capacity\u2014leading cross-functional development, enforcing architecture standards, and overseeing cloud/edge deployments\u2014aligns well with the technical execution requirements of this Manager role. His technical background in .NET, Angular/React, and Azure directly overlaps with key elements of PwC's stack. However, the job explicitly requires 12 to 14 years of experience, whereas Arvin has 8 years, creating a major seniority deficit for a Big 4 Acceleration Center. Furthermore, his career is rooted in industrial IoT/energy product delivery rather than multi-client IT enterprise consulting and services.",
+      "weak_vs_jd": "12 to 14 years of relevant software engineering experience, Demonstrated expertise in Python, Java, and enterprise microservices architecture, Experience in an IT services, consulting, or global acceleration center (GCC) delivery model, Hands-on exposure to Azure Agentic AI Services and formal API Management tools",
+      "note": "The 8-year total experience profile is a major bottleneck against the explicit 12-14 year mandate, which typically serves as a strict hard filter in corporate acceleration center recruiting."
+    },
+    {
+      "title": "Manager - Engineering (E-commerce)",
+      "company": "Chalhoub Group",
+      "link": "https://in.linkedin.com/jobs/view/manager-engineering-e-commerce-at-chalhoub-group-4480680437",
+      "easy_apply": false,
+      "rating": 55,
+      "why": "Chalhoub Group is a premier luxury retail operator in the Middle East, a geography where the candidate has deep enterprise delivery experience with regional tier-1 entities. However, the position centers squarely on consumer e-commerce stacks (web microservices, headless storefronts, payment gateways), contrasting sharply with the candidate's .NET, SCADA, and computer vision background. The candidate possesses the leadership, stakeholder management, and agile discipline to run the team, provided the hiring team accepts an engineering leader outside retail.",
+      "weak_vs_jd": "E-commerce platforms and retail architecture (checkout, catalog, cart), B2C consumer web microservices ecosystems, Modern headless commerce stacks",
+      "note": "Candidate's Middle East enterprise credibility helps bridge the substantial domain gap between SCADA and retail e-commerce."
+    },
+    {
+      "title": "Software Engineer Manager, Engineering Productivity, Google One and Photos",
+      "company": "Google",
+      "link": "https://in.linkedin.com/jobs/view/software-engineer-manager-engineering-productivity-google-one-and-photos-at-google-4472582661",
+      "easy_apply": false,
+      "rating": 54,
+      "why": "Google Engineering Productivity (EngProd) SEM roles focus heavily on developer tooling, automated test infrastructure, CI/CD pipelines, and release engineering at hyper-scale. Although the candidate has tangible exposure to computer vision and cloud automation, his core narrative is product feature delivery for B2B industrial systems rather than internal developer enablement. Transitioning into Google at the EM level typically requires proven hyper-scale distributed systems or dedicated developer infrastructure leadership.",
+      "weak_vs_jd": "Dedicated Engineering Productivity / developer tooling domain, Hyper-scale consumer web/mobile infrastructure, Google-scale CI/CD and test harness architecture",
+      "note": "EngProd is a distinct track at Google focused on dev tools and test frameworks rather than product engineering."
+    },
+    {
+      "title": "Manager, Software Development",
+      "company": "Prime Video & Amazon MGM Studios",
+      "link": "https://in.linkedin.com/jobs/view/manager-software-development-at-prime-video-amazon-mgm-studios-4456349838",
       "easy_apply": false,
       "rating": 52,
-      "why": "Yoti is seeking a Senior Team Lead with substantial management tenure (typically 7+ years in management alone) capable of managing other team leads across two squads. Arvin has 8 years of total engineering experience, meaning his management duration is much shorter, and he lacks explicit experience managing other managers. Furthermore, the role lists Salesforce experience and an agent-driven AI-native SDLC (Claude Code, Cursor workflows) as essential criteria, neither of which is present in Arvin's .NET/C++ enterprise background despite his relevant biometrics and security deployment track record.",
-      "weak_vs_jd": "Salesforce or Apex experience (explicitly listed as essential), Substantial engineering management experience of 7+ years (candidate has 8 years total career experience), Experience managing team leads / multi-squad structures (managing managers), AI-native SDLC practices (daily use of coding agents, Claude Code, subagents, and spec-driven tooling), Golang, Apex, or PostgreSQL production experience",
-      "note": "Salesforce is an explicit essential requirement; applying without addressing CRM integration or Salesforce exposure will likely result in an automated resume rejection."
+      "why": "The role requires managing distributed systems and driving engineering excellence, which aligns with Arvin's management style and Agile practices. However, Prime Video's stack heavily relies on AWS, distributed payments infrastructure, and large-scale web services, whereas Arvin's expertise is centered on C#, WPF, computer vision, and IoT/SCADA platforms. He would need to ramp up quickly on high-scale web payment architectures.",
+      "weak_vs_jd": "AWS ecosystem depth, Distributed payment or consumer video streaming infrastructure experience",
+      "note": "The technical gap in distributed web architectures makes this a challenging transition without strong preparation."
     },
     {
-      "title": "DevOps Manager",
-      "company": "OneTrust",
-      "link": "https://in.linkedin.com/jobs/view/devops-manager-at-onetrust-4484950260",
+      "title": "Manager II, Software Engineering",
+      "company": "Toast",
+      "link": "https://in.linkedin.com/jobs/view/manager-ii-software-engineering-at-toast-4467962056",
       "easy_apply": false,
       "rating": 52,
-      "why": "OneTrust requires 10+ years of dedicated DevOps experience to manage cloud infrastructure rollout and operations. While Arvin has orchestrated Azure/GCP cloud deployments for his products, his primary capability lies in software application architecture and ML product development, not dedicated SRE/DevOps infrastructure operations management.",
-      "weak_vs_jd": "10+ years dedicated DevOps/SRE background, Infra-as-code and cloud operations specialization",
-      "note": "Leans heavily toward Cloud Operations / SRE management rather than Software Engineering Management."
+      "why": "Toast operates a high-volume SaaS and point-of-sale platform requiring deep microservices and distributed transaction expertise. The Manager II tier typically represents a senior engineering manager overseeing multiple managers or expanded teams, which stretches the candidate's current first-line management scope. While the candidate brings solid full-lifecycle execution and edge/cloud system delivery, the domain gap between restaurant/fintech operations and industrial automation will require significant adaptation.",
+      "weak_vs_jd": "Manager II scope (experience managing managers), Fintech or restaurant SaaS domain experience, High-scale consumer transaction systems",
+      "note": "Manager II at Toast is often an M2 (second-line) role, which exceeds the candidate's verified first-line scope."
     },
     {
-      "title": "Engineering Manager (Backend ) - WWE Champions",
-      "company": "Scopely",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-backend-wwe-champions-at-scopely-4448624743",
+      "title": "Engineering Manager",
+      "company": "Cvent",
+      "link": "https://in.linkedin.com/jobs/view/engineering-manager-at-cvent-4475438487",
       "easy_apply": false,
       "rating": 50,
-      "why": "Arvin meets the people leadership and core management criteria, demonstrating solid experience in cross-functional alignment, agile execution, and platform reliability. However, this position requires directing the technical architecture for a large-scale Python/Django, Redis, and DynamoDB backend in a live-service mobile gaming environment. Arvin's background is focused on enterprise B2B, industrial SCADA, and computer vision within a .NET and GCP ecosystem. Lacking both the specific tech stack and live-ops gaming domain expertise, he will face steep competition from gaming-native backend leaders.",
-      "weak_vs_jd": "Python and Django backend architecture expertise, Familiarity with Redis, DynamoDB, and AWS cloud environments, Mobile gaming or live-service B2C backend experience, Experience with game live-ops, blueprints, A/B testing, and feature rollout tooling",
-      "note": "Transitioning simultaneously across both domain (Industrial/Energy to Mobile Gaming) and tech stack (.NET to Python/Django) makes clearing hiring manager review difficult."
+      "why": "The provided job description cuts off immediately after mentioning AI at Cvent, providing virtually no details on responsibilities, stack, or expectations. Without clear requirements regarding seniority, scope, or technical needs, it cannot be reliably matched against Arvin's profile.",
+      "weak_vs_jd": "Complete job description and requirements",
+      "note": "Skipped due to incomplete job posting text."
     }
   ],
   "Technical Program Manager": [
@@ -244,76 +318,14 @@ window.JOB_DATA = {
       "note": "Top recommended role; highlight dual Software Engineering Manager and TPM accomplishments."
     },
     {
-      "title": "Senior Project Manager (Platform)",
-      "company": "Lyzr AI",
-      "link": "https://in.linkedin.com/jobs/view/senior-project-manager-platform-at-lyzr-ai-4483025139",
+      "title": "Technical Program Manager (Saas/Engineering)",
+      "company": "Cognite",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-saas-engineering-at-cognite-4410531330",
       "easy_apply": false,
-      "rating": 88,
-      "why": "Lyzr AI needs a Senior Project Manager to lead enterprise AI agent deployments across multi-cloud and on-prem environments. Arvin's history of architecting computer vision and ML platforms, coupled with his hands-on experience in GCP/Alibaba Cloud and technical pre-sales, aligns directly with this job. His dual engineering and program leadership background makes him an ideal candidate to bridge client requirements and engineering pods.",
-      "weak_vs_jd": "Specific Lyzr Agentic AI framework familiarity",
-      "note": ""
-    },
-    {
-      "title": "Senior Project Manager",
-      "company": "Lyzr AI",
-      "link": "https://in.linkedin.com/jobs/view/senior-project-manager-at-lyzr-ai-4483013836",
-      "easy_apply": false,
-      "rating": 88,
-      "why": "Identical in scope to j15 (Lyzr AI SPM role), requiring someone who can coordinate solution architects, AI engineers, and client stakeholders to deploy agentic AI platforms into enterprise environments. Arvin's software architecture, cloud deployment, and technical pre-sales expertise position him perfectly for success in this role.",
-      "weak_vs_jd": "Lyzr-specific AI frameworks",
-      "note": ""
-    },
-    {
-      "title": "Technical Project Manager (3 - 5 years)",
-      "company": "PhonePe",
-      "link": "https://in.linkedin.com/jobs/view/technical-project-manager-3-5-years-at-phonepe-4483050673",
-      "easy_apply": false,
-      "rating": 88,
-      "why": "Arvin brings nearly 9 years of hands-on technical execution experience, easily satisfying the 4+ years requirement for core TPM roles. His work at Nybl managing multi-team backlogs in Azure DevOps/JIRA, designing solution architectures, and overseeing API/message queue integrations mirrors PhonePe's needs for platform and partner integration delivery. While his domain focus has been in AI platforms, industrial IoT, and enterprise integrations rather than explicit Fintech/Payments, his technical depth across cloud infrastructure, state/data pipelines, and cross-functional leadership makes him a strong fit.",
-      "weak_vs_jd": "Explicit Fintech/InsurTech or payment flow domain experience, Formal certifications such as PMP or CSM (though strong applied Agile experience is evidenced)",
-      "note": "Arvin's total experience (~9 years) slightly exceeds the 3-5 year band, but his technical depth and engineering management background make him an exceptional candidate for high-ownership TPM positions. | Re-analyzed with tailored resume (PhonePe-Technical_Project_Manager_(3_-_5_years).pdf)",
-      "reassessed": true
-    },
-    {
-      "title": "Engineering Delivery Manager",
-      "company": "Standard Chartered India",
-      "link": "https://in.linkedin.com/jobs/view/engineering-delivery-manager-at-standard-chartered-india-4484184256",
-      "easy_apply": false,
-      "rating": 88,
-      "why": "The candidate's experience as a Software Engineering Manager directly mirrors the JD's requirement for leading complex, cross-functional initiatives and managing delivery health. They demonstrate high proficiency in risk management, capacity planning, and executive stakeholder alignment. While their industry experience is in energy and health rather than banking, their technical leadership in cloud infrastructure and Agile governance is highly transferable to a global financial institution.",
-      "weak_vs_jd": "Direct experience in banking/financial regulatory environments, Explicit vendor and procurement management experience",
-      "note": "The candidate should emphasize any experience working within highly regulated or high-security frameworks to mitigate the lack of direct banking industry experience. | Re-analyzed with tailored resume (Standard_Chartered_India-Engineering_Delivery_Manager.pdf)",
-      "reassessed": true
-    },
-    {
-      "title": "Engineering Manager (GCP)",
-      "company": "Woolworths Group International",
-      "link": "https://in.linkedin.com/jobs/view/engineering-manager-gcp-at-woolworths-group-international-4484992316",
-      "easy_apply": false,
-      "rating": 84,
-      "why": "This role is a strong match for Arvin's current level as a Software Engineering Manager. Woolworths needs an EM to manage resource allocations, line-manage lead engineers, and orchestrate pipeline delivery across squads using GCP, Python, and SQL. Arvin's direct engineering management background and hands-on GCP/SQL experience satisfy the exact requirements of this operational leadership role.",
-      "weak_vs_jd": "Retail data domain / BigQuery specific stack depth",
-      "note": ""
-    },
-    {
-      "title": "Technical Program Manager",
-      "company": "GitLab",
-      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-at-gitlab-4467948930",
-      "easy_apply": false,
-      "rating": 82,
-      "why": "GitLab requires a TPM who can run multi-stage R&D initiatives and partner closely with engineering leads in a highly technical environment. Arvin's background as both a Software Engineering Manager and technical program leader provides the ideal mix of delivery management and deep technical empathy. His hands-on experience with developer tools and cloud infrastructure fits GitLab's DevSecOps ecosystem seamlessly.",
-      "weak_vs_jd": "Formal remote-first async handbook methodology experience",
-      "note": "Highlight experience with Azure DevOps and developer tooling to demonstrate alignment with DevSecOps operations."
-    },
-    {
-      "title": "Technical Project Manager",
-      "company": "Impetus",
-      "link": "https://in.linkedin.com/jobs/view/technical-project-manager-at-impetus-4484952079",
-      "easy_apply": false,
-      "rating": 80,
-      "why": "Impetus is looking for a TPM to oversee Generative AI, AI/ML, and cloud solutions, engaging in technical architecture discussions while reporting status to executives. Arvin's accomplishments with n.Lift and n.Vision directly showcase his ability to build and deliver AI/ML products on GCP and Alibaba Cloud. His experience presenting technical designs to senior stakeholders fits the client-facing requirements.",
-      "weak_vs_jd": "Hadoop / Hive / Spark big data ecosystem depth, AWS specific certifications/experience",
-      "note": ""
+      "rating": 92,
+      "why": "Cognite operates directly at the intersection of industrial digitalization, AI, and heavy-asset industries (oil & gas, manufacturing)\u2014the exact domain where Arvin delivered solutions for BP, Exxon, and KOC. The responsibilities match his strengths: translating complex requirements with Tech Leads/CTO, managing alpha/beta/GA schedules, and aligning product with enterprise delivery. His hybrid background as an Engineering Manager delivering industrial AI makes him an unusually strong contender for this TPM role.",
+      "weak_vs_jd": "Formal SaaS multi-tenant TPM product delivery metrics",
+      "note": "Prioritize this application above all others; emphasize Nybl client work with BP, Exxon, and KOC."
     },
     {
       "title": "Sr. Technical Program Manager, HST Health Foundation",
@@ -326,33 +338,43 @@ window.JOB_DATA = {
       "note": "Frame startup agility and enterprise Oil & Gas client delivery as evidence of handling high ambiguity."
     },
     {
-      "title": "Program Manager/Principal Manager, Program Management (GAI Tech)",
-      "company": "D. E. Shaw India Private Limited",
-      "link": "https://in.linkedin.com/jobs/view/program-manager-principal-manager-program-management-gai-tech-at-d-e-shaw-india-private-limited-4467734350",
-      "easy_apply": false,
-      "rating": 78,
-      "why": "D. E. Shaw's GAITech team focuses on developing AI infrastructure, LLM integrations, and developer productivity tools. Arvin's background in architecting performance ML systems, building C#/C++ ONNX pipelines, and using AI coding tools aligns well with this technical scope. While D. E. Shaw is a financial firm, the role itself is focused on software engineering and AI platform program management.",
-      "weak_vs_jd": "Quantitative finance environment background",
-      "note": ""
-    },
-    {
-      "title": "Sr. Technical Program Manager",
-      "company": "Amazon",
-      "link": "https://in.linkedin.com/jobs/view/sr-technical-program-manager-at-amazon-4468261302",
+      "title": "Technical Program Manager_ADAS/Driving features",
+      "company": "Aptiv",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-adas-driving-features-at-aptiv-4467750545",
       "easy_apply": false,
       "rating": 76,
-      "why": "Arvin's background in coordinating cross-functional engineering teams to deliver enterprise platforms matches the core execution requirements of this Sr. TPM role. His recent exposure to AI workflows and system integration will help drive technical efficiency initiatives. The primary gap is his lack of financial tech or e-commerce marketplace fee system domain experience.",
-      "weak_vs_jd": "E-commerce marketplace financial systems, High-volume transactional fee structures",
-      "note": ""
+      "why": "Aptiv's ADAS features demand strong technical depth in computer vision, edge runtime latency, and embedded/C++ performance. Arvin's standout achievement\u2014optimizing computer vision inference to sub-100ms via C++, ONNX runtime, and NATS\u2014is directly transferable to ADAS pipelines. His experience managing end-to-end delivery for mission-critical client deployments provides the rigorous execution mindset needed for automotive safety-critical systems.",
+      "weak_vs_jd": "Automotive standards (AUTOSAR, ISO 26262), Explicit ADAS / autonomous driving feature lifecycle",
+      "note": "Emphasize low-latency CV pipeline optimization and safety-critical deployment rigor during initial screening."
     },
     {
-      "title": "PMO-AI-Lead",
-      "company": "UST",
-      "link": "https://in.linkedin.com/jobs/view/pmo-ai-lead-at-ust-4474461009",
+      "title": "Senior Technical Program Manager",
+      "company": "Tekion Corp",
+      "link": "https://in.linkedin.com/jobs/view/senior-technical-program-manager-at-tekion-corp-4484046860",
       "easy_apply": false,
       "rating": 75,
-      "why": "This role requires driving AI enablement using Generative AI, LLMs, automation, and APIs within an enterprise PMO framework. Arvin's background in leading ML platform lifecycles and introducing automated cloud/AI solutions equips him to design and govern these tools effectively. His experience leading engineering teams will help in coaching and driving adoption.",
-      "weak_vs_jd": "Formal enterprise PMO leadership background",
+      "why": "Tekion's Senior TPM role maps well to Arvin's 7 years of engineering management experience. The role requires partnering with engineering, product, and infrastructure to manage dependencies, drive roadmap clarity, and mentor junior TPMs. Arvin's background delivering complex analytics platforms and orchestrating multi-team deployments provides the exact operational rigor Tekion needs for its growing enterprise automotive cloud.",
+      "weak_vs_jd": "Automotive retail / DMS domain knowledge, Dedicated cloud-native microservices TPM title",
+      "note": "A very credible Senior TPM match in high-growth enterprise software."
+    },
+    {
+      "title": "Program Manager II, Integrated Fleet Actions and Systems",
+      "company": "Google",
+      "link": "https://in.linkedin.com/jobs/view/program-manager-ii-integrated-fleet-actions-and-systems-at-google-4483628257",
+      "easy_apply": false,
+      "rating": 74,
+      "why": "Google PM II represents a mid-level program role (requiring 2+ years of PM experience), easily matched by Arvin's 7 years of engineering management and global deployment oversight. The role focuses on Google Cloud fleet actions, launch readiness, and cross-functional dependency management. Arvin's hands-on experience orchestrating tier-1 energy client rollouts and managing cloud infrastructure provides the operational credibility Google looks for.",
+      "weak_vs_jd": "Data center operations / NPI hardware experience, Internal Google fleet management tooling",
+      "note": "Ensure your resume clearly brands program governance, risk management, and schedule accountability."
+    },
+    {
+      "title": "Engineering Delivery Manager",
+      "company": "Standard Chartered India",
+      "link": "https://in.linkedin.com/jobs/view/engineering-delivery-manager-at-standard-chartered-india-4484184256",
+      "easy_apply": false,
+      "rating": 74,
+      "why": "This role requires a leader who can shape target architectures, coordinate global engineering teams, and manage multi-team delivery health. Arvin's dual background in software management and program execution fits this requirement well. While Standard Chartered is a major financial institution and Arvin comes from Energy/Industrial IoT, his enterprise tier-1 client alignment skills are highly transferrable.",
+      "weak_vs_jd": "Banking & financial services domain, Formal financial regulatory compliance background",
       "note": ""
     },
     {
@@ -366,34 +388,44 @@ window.JOB_DATA = {
       "note": "Position Software Engineering Manager scope as equivalent to Principal technical program ownership."
     },
     {
-      "title": "Manager, Strategic Projects",
-      "company": "Handshake",
-      "link": "https://in.linkedin.com/jobs/view/manager-strategic-projects-at-handshake-4421352620",
+      "title": "Technical Program Manager III, AWS Infra Supply Chain Automation",
+      "company": "Amazon Web Services (AWS)",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-iii-aws-infra-supply-chain-automation-at-amazon-web-services-aws-4475561911",
       "easy_apply": false,
-      "rating": 65,
-      "why": "Handshake requires a Manager of Strategic Projects to lead teams executing AI data and evaluation work for frontier AI labs. Arvin's strong background in AI applications and enterprise delivery translates well to overseeing high-stakes AI programs. However, the role leans heavily into operational human-in-the-loop data processes rather than software system architecture.",
-      "weak_vs_jd": "AI data annotation and post-training operations management",
-      "note": ""
+      "rating": 72,
+      "why": "AWS TPM III corresponds to a Senior TPM (L6), perfectly suited for Arvin's 7 years of progressive engineering leadership. The focus on infrastructure supply chain automation resonates well with his background in industrial automation, SCADA, and cloud infrastructure optimization across GCP and Alibaba Cloud. He will need to highlight formal TPM mechanisms (narrative writing, cross-dependency tracking) over hands-on EM tasks.",
+      "weak_vs_jd": "Formal AWS TPM narrative writing experience, Physical data center supply chain domain depth",
+      "note": "Reframe hands-on EM accomplishments into architectural program orchestration and cross-team dependency management."
     },
     {
-      "title": "Solution Owner Enterprise Search",
-      "company": "SKF Group",
-      "link": "https://in.linkedin.com/jobs/view/solution-owner-enterprise-search-at-skf-group-4483088707",
+      "title": "Technical Program Manager 3",
+      "company": "Lam Research",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-3-at-lam-research-4436532518",
       "easy_apply": false,
-      "rating": 58,
-      "why": "SKF operates in the industrial and mechatronics domain, where Arvin's SCADA and industrial automation background is valuable. However, the position specifically requires solution ownership over Enterprise Search, vector/semantic search, and Product Information Management (PIM) platforms, which fall outside his primary software architecture domain.",
-      "weak_vs_jd": "Product Information Management (PIM) platform ownership, Enterprise Search architecture (vector/semantic search)",
-      "note": ""
+      "rating": 64,
+      "why": "Lam Research asks for 5+ years of experience leading cross-functional technical programs, which aligns well with Arvin's 7 YoE. His industrial automation and SCADA background give him strong empathy for industrial equipment and hardware-adjacent environments. Nonetheless, Lam's core domain is semiconductor etch/deposition capital equipment, requiring familiarity with mechanical/process engineering cycles rather than pure software.",
+      "weak_vs_jd": "Semiconductor capital equipment (etch/deposition) domain, Hardware product lifecycle management (PLM)",
+      "note": "Viable if Lam's team is focused on software automation and control systems for their equipment."
     },
     {
-      "title": "Engagement Mgr",
-      "company": "ServiceNow",
-      "link": "https://in.linkedin.com/jobs/view/engagement-mgr-at-servicenow-4483026280",
+      "title": "Technical Program Manager \u2013 Firmware and Security",
+      "company": "Hewlett Packard Enterprise",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-%E2%80%93-firmware-and-security-at-hewlett-packard-enterprise-4483157861",
       "easy_apply": false,
-      "rating": 52,
-      "why": "ServiceNow requires an Engagement Manager to lead customer software implementations using their NowCreate methodology. While Arvin has strong enterprise client delivery experience, this role focuses heavily on ServiceNow SaaS platform delivery governance rather than direct software development or program engineering.",
-      "weak_vs_jd": "ServiceNow platform & NowCreate delivery methodology",
-      "note": ""
+      "rating": 62,
+      "why": "The role centers on leading engineering programs for compute offerings involving firmware, hardware, and security. Arvin has valuable low-level systems familiarity with C++, real-time architectures, and physical access control systems. However, HPE's core expectation leans heavily toward server firmware, BIOS, and silicon-adjacent hardware lifecycles rather than application-layer software engineering.",
+      "weak_vs_jd": "Firmware/BIOS development lifecycle, Server hardware compute platforms and BMC architectures, Dedicated hardware release governance",
+      "note": "Only pursue if open to pivoting closer to hardware/firmware program management."
+    },
+    {
+      "title": "Sr. Technical Program Manager",
+      "company": "Zillow",
+      "link": "https://in.linkedin.com/jobs/view/sr-technical-program-manager-at-zillow-4475556321",
+      "easy_apply": false,
+      "rating": 56,
+      "why": "Zillow wants a Senior TPM to act as the single connective tissue in India for PeopleTech platforms (Workday, ServiceNow). While Arvin is fully capable of running Jira grooming, sprint capacity, and quality gates, the scope is strictly operational IT/HR systems rather than the complex architecture and computer vision platforms he has spent his career building.",
+      "weak_vs_jd": "Workday and ServiceNow platform ecosystems, PeopleTech / internal enterprise HR systems experience",
+      "note": "A step down in technical complexity from industrial AI and platform architecture."
     }
   ]
 };

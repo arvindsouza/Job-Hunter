@@ -1,4 +1,4 @@
 {
-  "time_range": "24h",
+  "time_range": "week",
   "max_pulls": 50
 }

@@ -470,7 +470,7 @@ def extract_apply_target(page, linkedin_url: str) -> tuple[str, bool]:
         return company_url, False
     return linkedin_url, easy_apply
 
-
+ 
 def is_instahyre_url(url: str) -> bool:
     return bool(url) and "instahyre.com" in urlparse(url).netloc.lower()
 
@@ -936,7 +936,7 @@ def extract_jobs(page, search_query: str) -> list[dict[str, str]]:
 
 
 def job_to_ui_row(job: dict) -> dict:
-    return {
+    row = {
         "title": job.get("title", ""),
         "company": job.get("company", ""),
         "link": job.get("link", ""),
@@ -966,6 +966,9 @@ def job_to_ui_row(job: dict) -> dict:
             if part
         ),
     }
+    if job.get("reassessed"):
+        row["reassessed"] = True
+    return row
 
 
 def write_jobs_snapshot(snapshot: dict) -> None:
@@ -992,7 +995,9 @@ def update_ui_job_row(role_search: str, title: str, company: str, link: str, upd
             updated = row
             break
         if updated is None:
-            return None
+            updated = {"title": title, "company": company, "link": link, "easy_apply": False}
+            updated.update(updates)
+            rows.append(updated)
         rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
         snapshot["status"] = f"Re-analyzed {title} at {company} with tailored resume"
         write_jobs_snapshot(snapshot)
@@ -1020,7 +1025,7 @@ def read_jobs_file() -> dict:
 
 
 def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
-    """Merge this agent's rows into the shared UI payload without wiping the other role."""
+    """Replace this role's table. The other role is left unchanged."""
     rows = []
     for job in jobs:
         score = job.get("score")
@@ -1113,6 +1118,9 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                 payload = read_jobs_file()
             payload["agent_procs"] = agent_run_status()
             payload["settings"] = load_settings()
+            from orchestrator import chat_snapshot
+
+            payload["chat"] = chat_snapshot()
             self._send_json(payload)
             return
         if path == "/api/settings":
@@ -1219,6 +1227,25 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                     self._send_json({"error": "Could not find this job in the table."}, 400)
                     return
                 result["row"] = updated
+            self._send_json(result, 200 if result.get("ok") else 400)
+            return
+        if parsed.path == "/api/chat":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                body = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._send_json({"error": "Invalid JSON"}, 400)
+                return
+            if not isinstance(body, dict):
+                self._send_json({"error": "Invalid request"}, 400)
+                return
+            from orchestrator import start_chat_instruction
+
+            result = start_chat_instruction(
+                str(body.get("message") or ""),
+                str(body.get("role") or "").lower(),
+            )
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/run":

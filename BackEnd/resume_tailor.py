@@ -8,7 +8,13 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-from llm import analyze_tailored_resume_fit, complete_json, load_context, llm_available
+from llm import (
+    _fit_result_from_payload,
+    analyze_tailored_resumes_fit_batch,
+    complete_json,
+    load_context,
+    llm_available,
+)
 from resume_extract import ROLE_LABELS, ASSETS_DIR
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -137,42 +143,7 @@ def write_resume_pdf(path: Path, data: dict) -> None:
     pdf.output(str(path))
 
 
-def tailor_resume_pdf(role: str, title: str, company: str, description: str) -> dict:
-    if role not in ROLE_LABELS:
-        return {"ok": False, "error": "role must be em or tpm"}
-    resume_path = ASSETS_DIR / role / "resume.txt"
-    if not resume_path.exists():
-        return {"ok": False, "error": "Upload a resume for this role first."}
-    if not llm_available():
-        return {"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"}
-    resume_text = resume_path.read_text(encoding="utf-8")[:14000]
-    context = load_context(role) or {}
-    jd = (description or "").strip()[:8000] or "(No job description. Tailor using the title and company only.)"
-    data = complete_json(
-        (
-            "You rewrite a resume for one job application. Stay faithful to the source resume. "
-            "Do not invent employers, titles, degrees, dates, or skills. You may reorder, "
-            "tighten, and emphasize relevant work. Return JSON only."
-        ),
-        (
-            f"Target role family: {ROLE_LABELS[role]}.\n"
-            f"JOB TITLE: {title}\nCOMPANY: {company}\n"
-            f"JOB DESCRIPTION:\n{jd}\n\n"
-            f"CANDIDATE PROFILE JSON:\n{json.dumps(context, ensure_ascii=False)[:8000]}\n\n"
-            f"ORIGINAL RESUME TEXT:\n{resume_text}\n\n"
-            "Return JSON with:\n"
-            "name, contact (one line of email/phone/location),\n"
-            "summary (4-6 sentences tailored to this job),\n"
-            "skills (array of short skill phrases, 10-18 items, job-relevant first),\n"
-            "experience (array of {title, company, dates, bullets: 3-6 strings}),\n"
-            "education (array of strings or {school, degree, dates}),\n"
-            "additional (optional array of short extras).\n"
-            "Keep the resume to about one to two pages of content."
-        ),
-        timeout=180,
-    )
-    if not isinstance(data, dict) or not data.get("name"):
-        return {"ok": False, "error": "LLM did not return a usable resume."}
+def _save_tailored_resume(company: str, title: str, data: dict) -> dict:
     pdf_path = results_pdf_path(company, title)
     write_resume_pdf(pdf_path, data)
     pdf_path.with_suffix(".json").write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -182,6 +153,195 @@ def tailor_resume_pdf(role: str, title: str, company: str, description: str) -> 
         "path": str(pdf_path),
         "folder": str(RESULTS_DIR),
     }
+
+
+def _fit_ui_row(fit: dict, pdf_name: str) -> dict:
+    note = " | ".join(
+        part
+        for part in [
+            (fit.get("note") or "").strip(),
+            f"Re-analyzed with tailored resume ({pdf_name})",
+        ]
+        if part
+    )
+    return {
+        "rating": fit.get("score"),
+        "why": fit.get("reasoning") or fit.get("why") or "",
+        "weak_vs_jd": ", ".join((fit.get("missed") or [])[:6]),
+        "note": note,
+        "reassessed": True,
+    }
+
+
+def _chunks(items: list, size: int = 5):
+    for index in range(0, len(items), size):
+        yield items[index : index + size]
+
+
+def _tailor_prompt(role: str, resume_text: str, context: dict, packed: list[dict], score: bool) -> dict:
+    extra = (
+        " Also score each tailored resume against its JD in the same object "
+        "(rating, decision, why, reasoning, matched, missed, note)."
+        if score
+        else ""
+    )
+    return complete_json(
+        (
+            "You rewrite the same source resume for several job applications. "
+            "Stay faithful to the source. Do not invent employers, titles, degrees, dates, or skills. "
+            "You may reorder, tighten, and emphasize relevant work. Return JSON only. "
+            "Use double-quoted JSON keys only."
+        ),
+        (
+            f"Target role family: {ROLE_LABELS[role]}.\n"
+            f"CANDIDATE PROFILE JSON:\n{json.dumps(context, ensure_ascii=False)[:8000]}\n\n"
+            f"ORIGINAL RESUME TEXT:\n{resume_text}\n\n"
+            f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
+            "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
+            "Each object must include id, resume, and if scoring is requested also "
+            "rating (integer 0-100 on the job object, NOT inside resume).\n"
+            "resume has:\n"
+            "name, contact (one line of email/phone/location),\n"
+            "summary (4-6 sentences tailored to that job),\n"
+            "skills (array of short skill phrases, 10-18 items, job-relevant first),\n"
+            "experience (array of {title, company, dates, bullets: 3-6 strings}),\n"
+            "education (array of strings or {school, degree, dates}),\n"
+            "additional (optional array of short extras).\n"
+            f"{extra}"
+        ),
+        timeout=240,
+    )
+
+
+def _pack_tailor_jobs(indexed_jobs: list[tuple[int, dict]]) -> list[dict]:
+    packed = []
+    for global_index, job in indexed_jobs:
+        packed.append(
+            {
+                "id": f"j{global_index + 1}",
+                "title": job.get("title", ""),
+                "company": job.get("company", ""),
+                "description": (job.get("description") or "").strip()[:1800]
+                or "(No job description. Tailor using the title and company only.)",
+            }
+        )
+    return packed
+
+
+def _save_from_payload_row(job: dict, row: dict | None, score: bool) -> dict:
+    resume = (row or {}).get("resume") if isinstance(row, dict) else None
+    if not isinstance(resume, dict) or not resume.get("name"):
+        return {"ok": False, "error": "LLM returned no resume."}
+    try:
+        saved = _save_tailored_resume(job.get("company", ""), job.get("title", ""), resume)
+    except Exception as exc:
+        return {"ok": False, "error": f"Could not write PDF: {exc}"}
+    if score:
+        fit = _fit_result_from_payload(row, job.get("description", ""))
+        fit["reassessed"] = True
+        saved["row"] = _fit_ui_row(fit, saved["filename"])
+        if not fit.get("score"):
+            saved["_needs_score"] = True
+    return saved
+
+
+def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[dict]:
+    """Rewrite many resumes, falling back to smaller chunks if one LLM call fails."""
+    if role not in ROLE_LABELS:
+        return [{"ok": False, "error": "role must be em or tpm"} for _ in jobs]
+    resume_path = ASSETS_DIR / role / "resume.txt"
+    if not resume_path.exists():
+        return [{"ok": False, "error": "Upload a resume for this role first."} for _ in jobs]
+    if not llm_available():
+        return [{"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"} for _ in jobs]
+    if not jobs:
+        return []
+
+    resume_text = resume_path.read_text(encoding="utf-8")[:10000]
+    context = load_context(role) or {}
+    results: list[dict] = [{"ok": False, "error": "LLM returned no resume."} for _ in jobs]
+
+    def run_chunk(indexed: list[tuple[int, dict]]) -> None:
+        if not indexed:
+            return
+        packed = _pack_tailor_jobs(indexed)
+        try:
+            payload = _tailor_prompt(role, resume_text, context, packed, score)
+            rows = payload.get("jobs") if isinstance(payload, dict) else None
+            by_id = {}
+            if isinstance(rows, list):
+                for row in rows:
+                    if isinstance(row, dict) and row.get("id"):
+                        by_id[str(row["id"])] = row
+            missing: list[tuple[int, dict]] = []
+            for global_index, job in indexed:
+                row = by_id.get(f"j{global_index + 1}")
+                saved = _save_from_payload_row(job, row, score)
+                if saved.get("ok"):
+                    results[global_index] = saved
+                else:
+                    missing.append((global_index, job))
+            if missing and len(indexed) > 1:
+                for item in missing:
+                    run_chunk([item])
+            elif missing and len(indexed) == 1:
+                results[missing[0][0]] = {
+                    "ok": False,
+                    "error": saved.get("error") or "LLM returned no resume.",
+                }
+        except Exception as exc:
+            if len(indexed) > 1:
+                mid = max(1, len(indexed) // 2)
+                run_chunk(indexed[:mid])
+                run_chunk(indexed[mid:])
+            else:
+                global_index, job = indexed[0]
+                results[global_index] = {
+                    "ok": False,
+                    "error": f"{job.get('title')}: {exc}",
+                }
+
+    for chunk in _chunks(list(enumerate(jobs)), 5):
+        run_chunk(chunk)
+
+    if score:
+        pending = []
+        for index, job in enumerate(jobs):
+            saved = results[index]
+            rating = (saved.get("row") or {}).get("rating")
+            if saved.get("ok") and (saved.get("_needs_score") or rating in (0, None)):
+                pending.append((index, job, saved))
+        if pending:
+            fits = analyze_tailored_resumes_fit_batch(
+                ROLE_LABELS[role],
+                [
+                    {
+                        "title": job.get("title", ""),
+                        "company": job.get("company", ""),
+                        "description": job.get("description", ""),
+                        "resume": load_tailored_resume(job.get("company", ""), job.get("title", "")) or {},
+                    }
+                    for _index, job, _saved in pending
+                ],
+            )
+            for (index, _job, saved), fit in zip(pending, fits):
+                if not fit or not fit.get("score"):
+                    continue
+                saved["row"] = _fit_ui_row(fit, saved["filename"])
+                results[index] = saved
+    for saved in results:
+        if isinstance(saved, dict):
+            saved.pop("_needs_score", None)
+    return results
+
+
+def tailor_resume_pdf(role: str, title: str, company: str, description: str) -> dict:
+    results = tailor_jobs_batch(
+        role,
+        [{"title": title, "company": company, "description": description}],
+        score=False,
+    )
+    return results[0] if results else {"ok": False, "error": "Could not tailor resume."}
 
 
 def load_tailored_resume(company: str, title: str) -> dict | None:
@@ -195,38 +355,68 @@ def load_tailored_resume(company: str, title: str) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
-def reassess_with_tailored_resume(role: str, title: str, company: str, description: str) -> dict:
+def reassess_jobs_batch(role: str, jobs: list[dict]) -> list[dict]:
     if role not in ROLE_LABELS:
-        return {"ok": False, "error": "role must be em or tpm"}
+        return [{"ok": False, "error": "role must be em or tpm"} for _ in jobs]
     if not llm_available():
-        return {"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"}
-    tailored = load_tailored_resume(company, title)
-    if not tailored:
-        return {"ok": False, "error": "Tailor the resume for this job first."}
-    fit = analyze_tailored_resume_fit(
-        ROLE_LABELS[role],
-        tailored,
-        title,
-        company,
-        description,
+        return [{"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"} for _ in jobs]
+    prepared = []
+    results: list[dict] = []
+    for job in jobs:
+        tailored = load_tailored_resume(job.get("company", ""), job.get("title", ""))
+        if not tailored:
+            results.append({"ok": False, "error": "Tailor the resume for this job first."})
+            continue
+        results.append(None)
+        prepared.append(
+            {
+                "index": len(results) - 1,
+                "title": job.get("title", ""),
+                "company": job.get("company", ""),
+                "description": job.get("description", ""),
+                "resume": tailored,
+            }
+        )
+    def run_reassess(chunk: list[dict]) -> None:
+        if not chunk:
+            return
+        try:
+            fits = analyze_tailored_resumes_fit_batch(ROLE_LABELS[role], chunk)
+            missing = []
+            for item, fit in zip(chunk, fits):
+                if not fit:
+                    missing.append(item)
+                    continue
+                pdf_name = results_pdf_path(item["company"], item["title"]).name
+                results[item["index"]] = {
+                    "ok": True,
+                    "filename": pdf_name,
+                    "row": _fit_ui_row(fit, pdf_name),
+                }
+            if missing and len(chunk) > 1:
+                for item in missing:
+                    run_reassess([item])
+            elif missing and len(chunk) == 1:
+                results[missing[0]["index"]] = {"ok": False, "error": "LLM returned no re-score."}
+        except Exception as exc:
+            if len(chunk) > 1:
+                mid = max(1, len(chunk) // 2)
+                run_reassess(chunk[:mid])
+                run_reassess(chunk[mid:])
+            else:
+                results[chunk[0]["index"]] = {"ok": False, "error": str(exc)}
+
+    for chunk in _chunks(prepared, 5):
+        run_reassess(chunk)
+    return [
+        item if item is not None else {"ok": False, "error": "LLM returned no re-score."}
+        for item in results
+    ]
+
+
+def reassess_with_tailored_resume(role: str, title: str, company: str, description: str) -> dict:
+    results = reassess_jobs_batch(
+        role,
+        [{"title": title, "company": company, "description": description}],
     )
-    pdf_name = results_pdf_path(company, title).name
-    note = " | ".join(
-        part
-        for part in [
-            (fit.get("note") or "").strip(),
-            f"Re-analyzed with tailored resume ({pdf_name})",
-        ]
-        if part
-    )
-    return {
-        "ok": True,
-        "filename": pdf_name,
-        "row": {
-            "rating": fit.get("score"),
-            "why": fit.get("reasoning") or fit.get("why") or "",
-            "weak_vs_jd": ", ".join((fit.get("missed") or [])[:6]),
-            "note": note,
-            "reassessed": True,
-        },
-    }
+    return results[0] if results else {"ok": False, "error": "Could not re-assess job."}
