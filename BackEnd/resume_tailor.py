@@ -198,7 +198,9 @@ def _tailor_prompt(role: str, resume_text: str, context: dict, packed: list[dict
             f"ORIGINAL RESUME TEXT:\n{resume_text}\n\n"
             f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
             "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
-            "Each object must include id and resume, where resume has:\n"
+            "Each object must include id, resume, and if scoring is requested also "
+            "rating (integer 0-100 on the job object, NOT inside resume).\n"
+            "resume has:\n"
             "name, contact (one line of email/phone/location),\n"
             "summary (4-6 sentences tailored to that job),\n"
             "skills (array of short skill phrases, 10-18 items, job-relevant first),\n"
@@ -238,6 +240,8 @@ def _save_from_payload_row(job: dict, row: dict | None, score: bool) -> dict:
         fit = _fit_result_from_payload(row, job.get("description", ""))
         fit["reassessed"] = True
         saved["row"] = _fit_ui_row(fit, saved["filename"])
+        if not fit.get("score"):
+            saved["_needs_score"] = True
     return saved
 
 
@@ -299,6 +303,35 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
 
     for chunk in _chunks(list(enumerate(jobs)), 5):
         run_chunk(chunk)
+
+    if score:
+        pending = []
+        for index, job in enumerate(jobs):
+            saved = results[index]
+            rating = (saved.get("row") or {}).get("rating")
+            if saved.get("ok") and (saved.get("_needs_score") or rating in (0, None)):
+                pending.append((index, job, saved))
+        if pending:
+            fits = analyze_tailored_resumes_fit_batch(
+                ROLE_LABELS[role],
+                [
+                    {
+                        "title": job.get("title", ""),
+                        "company": job.get("company", ""),
+                        "description": job.get("description", ""),
+                        "resume": load_tailored_resume(job.get("company", ""), job.get("title", "")) or {},
+                    }
+                    for _index, job, _saved in pending
+                ],
+            )
+            for (index, _job, saved), fit in zip(pending, fits):
+                if not fit or not fit.get("score"):
+                    continue
+                saved["row"] = _fit_ui_row(fit, saved["filename"])
+                results[index] = saved
+    for saved in results:
+        if isinstance(saved, dict):
+            saved.pop("_needs_score", None)
     return results
 
 

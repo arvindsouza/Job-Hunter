@@ -324,24 +324,49 @@ def _context_blob(context: dict) -> dict:
     }
 
 
+def _coerce_score(value) -> int | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, min(100, int(round(float(value)))))
+    text = str(value).strip()
+    match = re.search(r"(\d{1,3})(?:\s*/\s*100)?", text)
+    if not match:
+        return None
+    return max(0, min(100, int(match.group(1))))
+
+
 def _fit_result_from_payload(data: dict, description: str) -> dict:
-    try:
-        score = int(round(float(data.get("rating"))))
-    except (TypeError, ValueError):
+    nested = data.get("resume") if isinstance(data.get("resume"), dict) else {}
+    score = None
+    for source in (data, nested):
+        if not isinstance(source, dict):
+            continue
+        for key in ("rating", "score", "fit_rating", "fit"):
+            score = _coerce_score(source.get(key))
+            if score is not None:
+                break
+        if score is not None:
+            break
+    if score is None:
         score = 0
-    score = max(0, min(100, score))
-    matched = [str(item) for item in (data.get("matched") or []) if str(item).strip()]
-    missed = [str(item) for item in (data.get("missed") or []) if str(item).strip()]
+    matched = [str(item) for item in (data.get("matched") or nested.get("matched") or []) if str(item).strip()]
+    missed = [str(item) for item in (data.get("missed") or nested.get("missed") or []) if str(item).strip()]
+    why = str(data.get("why") or nested.get("why") or "").strip()
+    reasoning = str(data.get("reasoning") or nested.get("reasoning") or "").strip()
+    note = str(data.get("note") or nested.get("note") or "").strip()
     return {
         "score": score,
-        "title_note": str(data.get("why") or "").strip(),
+        "title_note": why,
         "matched": matched,
         "missed": missed,
         "jd_gaps": missed[:8],
         "had_description": bool((description or "").strip()),
-        "why": str(data.get("why") or "").strip(),
-        "reasoning": str(data.get("reasoning") or "").strip(),
-        "note": str(data.get("note") or "").strip(),
+        "why": why,
+        "reasoning": reasoning,
+        "note": note,
         "decision": str(data.get("decision") or "").strip().lower(),
         "method": "llm",
         "provider": llm_provider_name(),

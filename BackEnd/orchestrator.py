@@ -38,7 +38,7 @@ def _set(**kwargs) -> None:
         CHAT_STATE.update(kwargs)
 
 
-def _heuristic_plan(message: str, inventory: dict) -> dict:
+def _heuristic_plan(message: str, inventory: dict, view_role: str = "") -> dict:
     text = message.lower()
     roles: list[str] = []
     if re.search(r"\b(tpm|technical program|program manager)\b", text):
@@ -46,20 +46,29 @@ def _heuristic_plan(message: str, inventory: dict) -> dict:
     if re.search(r"\b(em|engineering manager|eng manager|engineering lead)\b", text):
         roles.append("em")
     if not roles:
-        focus = CHAT_STATE.get("focus_role")
-        if focus in ("em", "tpm"):
-            roles.append(focus)
-        elif inventory.get("em_resume"):
-            roles.append("em")
-        elif inventory.get("tpm_resume"):
-            roles.append("tpm")
+        if view_role in ("em", "tpm"):
+            roles.append(view_role)
         else:
-            roles = ["em"]
+            focus = CHAT_STATE.get("focus_role")
+            if focus in ("em", "tpm"):
+                roles.append(focus)
+            elif inventory.get("em_resume"):
+                roles.append("em")
+            elif inventory.get("tpm_resume"):
+                roles.append("tpm")
+            else:
+                roles = ["em"]
 
     numbers = [int(n) for n in re.findall(r"\b(\d{1,3})\b", text)]
+    band = re.search(r"\b(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})\b", text)
     top_n = next((n for n in numbers if 1 <= n <= 30), 10)
     time_range = "24h" if re.search(r"24\s*h|today|past day|last day", text) else "week"
-    min_rating = 70 if re.search(r"strong|best|top", text) else 50
+    if band:
+        min_rating = max(0, min(100, int(band.group(1))))
+        max_rating = max(min_rating, min(100, int(band.group(2))))
+    else:
+        min_rating = 70 if re.search(r"strong|best|top", text) else 50
+        max_rating = 100
 
     force_skip = bool(re.search(r"existing|current (list|table|results)|already (have|listed)|from the table", text))
     force_scrape = bool(
@@ -83,11 +92,12 @@ def _heuristic_plan(message: str, inventory: dict) -> dict:
         "reassess": reassess,
         "top_n": top_n,
         "min_rating": min_rating,
+        "max_rating": max_rating,
         "time_range": time_range,
         "max_pulls": min(200, max(50, top_n * 5)),
         "summary": (
             f"{'Scrape' if scrape else 'Reuse'} {' & '.join(roles).upper()}, "
-            f"keep top {top_n} at {min_rating}+"
+            f"keep top {top_n} at {min_rating}-{max_rating}"
             f"{', tailor' if tailor else ''}{', re-score' if reassess else ''}."
         ),
     }
@@ -135,17 +145,19 @@ def _role_rows(role_id: str) -> list[dict]:
     return list((snapshot.get("jobs") or {}).get(ROLE_META[role_id]["search"]) or [])
 
 
-def _pick_jobs(rows: list[dict], top_n: int, min_rating: int) -> list[dict]:
+def _pick_jobs(rows: list[dict], top_n: int, min_rating: int, max_rating: int = 100) -> list[dict]:
     ranked = []
     for row in rows:
         rating = row.get("rating")
         if rating is None or rating == "":
+            ranked.append(row)
             continue
         try:
             score = float(rating)
         except (TypeError, ValueError):
+            ranked.append(row)
             continue
-        if score < min_rating:
+        if score < min_rating or score > max_rating:
             continue
         ranked.append(row)
     ranked.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
@@ -163,7 +175,7 @@ def _run_role(role_id: str, plan: dict) -> dict:
         return result
 
     if plan["scrape"]:
-        _append("assistant", f"{label}: scraping listings…")
+        _append("assistant", f"{label}: clearing the table and scraping new listings…")
         started = start_fresh_run(role_id)
         if not started.get("ok"):
             result["errors"].append(started.get("error") or "Could not start scrape.")
@@ -179,7 +191,7 @@ def _run_role(role_id: str, plan: dict) -> dict:
 
     rows = _role_rows(role_id)
     result["jobs"] = len(rows)
-    chosen = _pick_jobs(rows, plan["top_n"], plan["min_rating"])
+    chosen = _pick_jobs(rows, plan["top_n"], plan["min_rating"], plan.get("max_rating", 100))
     if not chosen:
         _append("assistant", f"{label}: no jobs at {plan['min_rating']}+ yet.")
         return result
@@ -187,6 +199,9 @@ def _run_role(role_id: str, plan: dict) -> dict:
     names = ", ".join(f"{job.get('title')} at {job.get('company')}" for job in chosen[:5])
     extra = f" (+{len(chosen) - 5} more)" if len(chosen) > 5 else ""
     _append("assistant", f"{label}: working on {len(chosen)} fit(s): {names}{extra}")
+
+    if not plan["tailor"] and not plan["reassess"]:
+        return result
 
     packed = []
     for job in chosen:
@@ -199,7 +214,7 @@ def _run_role(role_id: str, plan: dict) -> dict:
         except Exception as exc:
             result["errors"].append(f"Could not fetch JD for {title}: {exc}")
             description = ""
-        packed.append({"title": title, "company": company, "link": link, "description": description})
+        packed.append({"title": title, "company": company, "link": link, "description": description, "note": job.get("note")})
 
     outcomes: list[dict] = [{"ok": False} for _ in packed]
     if plan["tailor"]:
@@ -232,31 +247,46 @@ def _run_role(role_id: str, plan: dict) -> dict:
 
     for job, outcome in zip(packed, outcomes):
         if not outcome or not outcome.get("ok"):
-            result["errors"].append(outcome.get("error") if outcome else f"Failed {job['title']}")
+            err = (outcome or {}).get("error") or f"Failed {job['title']}"
+            result["errors"].append(str(err))
             continue
         if plan["tailor"]:
             result["tailored"] += 1
-        if plan["reassess"] and outcome.get("row"):
-            updated = update_ui_job_row(
-                ROLE_META[role_id]["search"],
-                job["title"],
-                job["company"],
-                job["link"],
-                outcome["row"],
-            )
-            rating = (updated or outcome["row"]).get("rating")
+        row_update = outcome.get("row")
+        if plan["tailor"] and not row_update:
+            row_update = {
+                "note": " | ".join(
+                    part
+                    for part in [
+                        str(job.get("note") or "").strip(),
+                        f"Tailored resume saved ({outcome.get('filename') or 'Results/'})",
+                    ]
+                    if part
+                ),
+            }
+        if not row_update:
+            continue
+        updated = update_ui_job_row(
+            ROLE_META[role_id]["search"],
+            job["title"],
+            job["company"],
+            job["link"],
+            row_update,
+        )
+        if plan["reassess"] and (updated or {}).get("reassessed"):
             result["reassessed"] += 1
+            rating = updated.get("rating")
             if isinstance(rating, (int, float)) and rating >= 80:
                 result["apply"].append(f"{job['title']} at {job['company']} ({int(rating)}/100)")
     return result
 
 
-def _execute(message: str) -> None:
+def _execute(message: str, view_role: str = "") -> None:
     from common import save_settings
 
     try:
         inventory = _inventory()
-        plan = _heuristic_plan(message, inventory)
+        plan = _heuristic_plan(message, inventory, view_role)
         _set(plan=plan, focus_role=plan["roles"][0])
         save_settings({"time_range": plan["time_range"], "max_pulls": plan["max_pulls"]})
         _append("assistant", f"Plan: {plan['summary']}")
@@ -274,7 +304,8 @@ def _execute(message: str) -> None:
             if item["apply"]:
                 lines.append("Apply: " + "; ".join(item["apply"]))
             for error in item["errors"][:4]:
-                lines.append(error)
+                if error:
+                    lines.append(str(error))
         _append("assistant", "\n".join(lines))
     except Exception as exc:
         _append("assistant", f"Stopped: {exc}")
@@ -282,7 +313,7 @@ def _execute(message: str) -> None:
         _set(running=False)
 
 
-def start_chat_instruction(message: str) -> dict:
+def start_chat_instruction(message: str, view_role: str = "") -> dict:
     text = (message or "").strip()
     if not text:
         return {"ok": False, "error": "Type an instruction first.", "chat": chat_snapshot()}
@@ -292,6 +323,6 @@ def start_chat_instruction(message: str) -> dict:
         CHAT_STATE["running"] = True
         CHAT_STATE["messages"].append({"role": "user", "text": text})
         CHAT_STATE["messages"] = CHAT_STATE["messages"][-40:]
-    thread = threading.Thread(target=_execute, args=(text,), daemon=True)
+    thread = threading.Thread(target=_execute, args=(text, view_role), daemon=True)
     thread.start()
     return {"ok": True, "chat": chat_snapshot()}

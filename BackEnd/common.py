@@ -935,17 +935,6 @@ def extract_jobs(page, search_query: str) -> list[dict[str, str]]:
     return jobs
 
 
-def _job_identity(row: dict) -> tuple:
-    link = str(row.get("link") or "").strip()
-    if link and link != "Link not found":
-        return ("link", link)
-    return (
-        "tc",
-        str(row.get("title") or "").strip().lower(),
-        str(row.get("company") or "").strip().lower(),
-    )
-
-
 def job_to_ui_row(job: dict) -> dict:
     row = {
         "title": job.get("title", ""),
@@ -1036,33 +1025,17 @@ def read_jobs_file() -> dict:
 
 
 def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
-    """Merge this agent's rows into the shared UI payload without wiping the other role."""
-    incoming = []
+    """Replace this role's table. The other role is left unchanged."""
+    rows = []
     for job in jobs:
         score = job.get("score")
         if score is not None and score < MIN_RATING:
             continue
-        incoming.append(job_to_ui_row(job))
+        rows.append(job_to_ui_row(job))
+    rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
 
     with UI_STATE_LOCK:
         snapshot = read_jobs_file()
-        previous = snapshot.get("jobs", {}).get(role) or []
-        previous_by_id = {_job_identity(row): row for row in previous}
-        seen: set[tuple] = set()
-        rows = []
-        for row in incoming:
-            key = _job_identity(row)
-            seen.add(key)
-            prior = previous_by_id.get(key)
-            if prior and prior.get("reassessed"):
-                for field in ("rating", "why", "weak_vs_jd", "note", "reassessed"):
-                    if prior.get(field) not in (None, ""):
-                        row[field] = prior[field]
-            rows.append(row)
-        for key, prior in previous_by_id.items():
-            if key not in seen and prior.get("reassessed"):
-                rows.append(prior)
-        rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
         snapshot["jobs"][role] = rows
         running_by_role = snapshot.get("running_by_role") or {}
         running_by_role[role] = running
@@ -1096,14 +1069,7 @@ def start_fresh_run(role_id: str) -> dict:
         return {"ok": False, "error": "A fresh run is already in progress for this role."}
 
     meta = ROLE_META[role_id]
-    with UI_STATE_LOCK:
-        snapshot = read_jobs_file()
-        running_by_role = snapshot.get("running_by_role") or {}
-        running_by_role[meta["search"]] = True
-        snapshot["running_by_role"] = running_by_role
-        snapshot["running"] = True
-        snapshot["status"] = f"{meta['label']}: starting fresh run"
-        write_jobs_snapshot(snapshot)
+    publish_ui([], f"{meta['label']}: starting fresh run", True, meta["search"])
     command = [sys.executable, "-u", str(agent_script_path(role_id))]
     creationflags = 0
     if sys.platform == "win32":
@@ -1276,7 +1242,10 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                 return
             from orchestrator import start_chat_instruction
 
-            result = start_chat_instruction(str(body.get("message") or ""))
+            result = start_chat_instruction(
+                str(body.get("message") or ""),
+                str(body.get("role") or "").lower(),
+            )
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/run":
