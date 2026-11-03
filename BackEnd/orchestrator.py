@@ -6,6 +6,7 @@ import re
 import threading
 import time
 
+from llm import complete_json, llm_available
 from resume_tailor import reassess_jobs_batch, tailor_jobs_batch
 
 CHAT_LOCK = threading.Lock()
@@ -13,6 +14,7 @@ CHAT_STATE = {
     "running": False,
     "focus_role": None,
     "plan": None,
+    "last_plan": None,
     "messages": [],
 }
 
@@ -23,6 +25,7 @@ def chat_snapshot() -> dict:
             "running": CHAT_STATE["running"],
             "focus_role": CHAT_STATE["focus_role"],
             "plan": CHAT_STATE["plan"],
+            "last_plan": CHAT_STATE["last_plan"],
             "messages": list(CHAT_STATE["messages"]),
         }
 
@@ -38,13 +41,65 @@ def _set(**kwargs) -> None:
         CHAT_STATE.update(kwargs)
 
 
+def _plan_summary(plan: dict) -> str:
+    roles = " & ".join(role.upper() for role in plan.get("roles") or ["em"])
+    return (
+        f"{'Scrape' if plan.get('scrape') else 'Reuse'} {roles}, "
+        f"keep top {plan.get('top_n')} at {plan.get('min_rating')}-{plan.get('max_rating')}"
+        f"{', tailor' if plan.get('tailor') else ''}"
+        f"{', re-score' if plan.get('reassess') else ''}."
+    )
+
+
+def _describe_plan(plan: dict, followup: bool = False) -> str:
+    roles = " and ".join(
+        "TPM" if role == "tpm" else "EM" for role in plan.get("roles") or ["em"]
+    )
+    when = "the past day" if plan.get("time_range") == "24h" else "the past week"
+    bits = []
+    if followup:
+        bits.append("I'll do the same kind of run")
+    if plan.get("scrape"):
+        bits.append(f"fetch up to {plan.get('max_pulls')} {roles} listings from {when}")
+    else:
+        bits.append(f"use the current {roles} table")
+    if plan.get("all"):
+        bits.append("use every row in the table")
+    else:
+        bits.append(f"focus on the top {plan.get('top_n')} in the {plan.get('min_rating')}-{plan.get('max_rating')} range")
+    if plan.get("tailor") and plan.get("reassess"):
+        bits.append("tailor those resumes and re-score them")
+    elif plan.get("tailor"):
+        bits.append("tailor those resumes")
+    elif plan.get("reassess"):
+        bits.append("re-score those rows")
+    text = ", ".join(bits) + "."
+    return text[0].upper() + text[1:]
+
+
+def _is_followup(text: str) -> bool:
+    return bool(
+        re.search(
+            r"\b("
+            r"same|again|also|repeat|more|"
+            r"like (?:that|before|last time)|as before|do that|"
+            r"with \d+|for \d+|to \d+"
+            r")\b",
+            text,
+        )
+    )
+
+
 def _heuristic_plan(message: str, inventory: dict, view_role: str = "") -> dict:
     text = message.lower()
     roles: list[str] = []
+    role_mentioned = False
     if re.search(r"\b(tpm|technical program|program manager)\b", text):
         roles.append("tpm")
+        role_mentioned = True
     if re.search(r"\b(em|engineering manager|eng manager|engineering lead)\b", text):
         roles.append("em")
+        role_mentioned = True
     if not roles:
         if view_role in ("em", "tpm"):
             roles.append(view_role)
@@ -61,31 +116,49 @@ def _heuristic_plan(message: str, inventory: dict, view_role: str = "") -> dict:
 
     numbers = [int(n) for n in re.findall(r"\b(\d{1,3})\b", text)]
     band = re.search(r"\b(\d{1,3})\s*(?:-|–|to)\s*(\d{1,3})\b", text)
-    top_n = next((n for n in numbers if 1 <= n <= 30), 10)
+    want_all = bool(re.search(r"\b(all|every|entire|everything)\b", text))
+    number_mentioned = bool(numbers) or want_all
+    top_n = 200 if want_all else next((n for n in numbers if 1 <= n <= 50), 10)
+    time_mentioned = bool(re.search(r"24\s*h|today|past day|last day|\bweek\b", text))
     time_range = "24h" if re.search(r"24\s*h|today|past day|last day", text) else "week"
     if band:
         min_rating = max(0, min(100, int(band.group(1))))
         max_rating = max(min_rating, min(100, int(band.group(2))))
+    elif want_all:
+        min_rating = 0
+        max_rating = 100
     else:
         min_rating = 70 if re.search(r"strong|best|top", text) else 50
         max_rating = 100
 
-    force_skip = bool(re.search(r"existing|current (list|table|results)|already (have|listed)|from the table", text))
+    force_skip = bool(
+        re.search(
+            r"existing|current (list|table|results)|already (have|listed)|from the table|in the table|this table",
+            text,
+        )
+    )
     force_scrape = bool(
-        re.search(r"\b(fresh run|scrape|pull|this week|find me|get me|new search|search for)\b", text)
+        re.search(
+            r"\b("
+            r"fresh(?:\s+run)?|scrape|pull|fetch|refresh|"
+            r"this week|find(?:\s+me)?|get me|look for|hunt|"
+            r"new search|search for|search again|"
+            r"new jobs?|new listings?|new roles?"
+            r")\b",
+            text,
+        )
     )
     scrape = bool(force_scrape) and not force_skip
-
-    tailor = bool(re.search(r"tailor|custom resume|rewrite resume", text)) and not re.search(
-        r"skip tailor|don'?t tailor|without tailor", text
-    )
+    skip_tailor = bool(re.search(r"skip tailor|don'?t tailor|without tailor", text))
+    tailor = bool(re.search(r"tailor|custom resume|rewrite resume", text)) and not skip_tailor
+    skip_reassess = bool(re.search(r"skip re-?score|skip re-?assess", text))
     reassess = (
         bool(re.search(r"re-?score|re-?assess|re-?analy", text))
         or tailor
         or bool(re.search(r"which to apply|tell me which", text))
-    ) and not re.search(r"skip re-?score|skip re-?assess", text)
+    ) and not skip_reassess
 
-    return {
+    plan = {
         "roles": roles,
         "scrape": scrape,
         "tailor": tailor,
@@ -94,13 +167,138 @@ def _heuristic_plan(message: str, inventory: dict, view_role: str = "") -> dict:
         "min_rating": min_rating,
         "max_rating": max_rating,
         "time_range": time_range,
-        "max_pulls": min(200, max(50, top_n * 5)),
-        "summary": (
-            f"{'Scrape' if scrape else 'Reuse'} {' & '.join(roles).upper()}, "
-            f"keep top {top_n} at {min_rating}-{max_rating}"
-            f"{', tailor' if tailor else ''}{', re-score' if reassess else ''}."
-        ),
+        "max_pulls": min(200, max(50, min(top_n, 50) * 5)),
+        "all": want_all,
     }
+
+    last = CHAT_STATE.get("last_plan")
+    followup = bool(last) and _is_followup(text)
+    if followup:
+        merged = dict(last)
+        if role_mentioned:
+            merged["roles"] = roles
+        if number_mentioned:
+            merged["top_n"] = top_n
+            merged["max_pulls"] = min(200, max(50, min(top_n, 50) * 5))
+            merged["all"] = want_all
+        if want_all and not band:
+            merged["min_rating"] = 0
+            merged["max_rating"] = 100
+        if band:
+            merged["min_rating"] = min_rating
+            merged["max_rating"] = max_rating
+        if time_mentioned:
+            merged["time_range"] = time_range
+        if force_skip:
+            merged["scrape"] = False
+        elif force_scrape:
+            merged["scrape"] = True
+        if skip_tailor:
+            merged["tailor"] = False
+        elif tailor:
+            merged["tailor"] = True
+        if skip_reassess:
+            merged["reassess"] = False
+        elif reassess:
+            merged["reassess"] = True
+        plan = merged
+
+    plan["summary"] = _plan_summary(plan)
+    plan["followup"] = followup
+    plan["act"] = bool(plan.get("scrape") or plan.get("tailor") or plan.get("reassess"))
+    plan["reply"] = _describe_plan(plan, followup=followup)
+    return plan
+
+
+def _normalize_llm_plan(data: dict, fallback: dict) -> dict:
+    roles = [role for role in (data.get("roles") or []) if role in ("em", "tpm")]
+    if not roles:
+        roles = list(fallback.get("roles") or ["em"])
+    top_n = data.get("top_n")
+    want_all = bool(data.get("all") or top_n == "all" or top_n == "every")
+    try:
+        top_n = 200 if want_all else max(1, min(50, int(top_n if top_n not in (None, "all") else fallback.get("top_n") or 10)))
+    except (TypeError, ValueError):
+        top_n = 200 if want_all else int(fallback.get("top_n") or 10)
+    try:
+        min_rating = max(0, min(100, int(data.get("min_rating") if data.get("min_rating") is not None else fallback.get("min_rating") or 50)))
+    except (TypeError, ValueError):
+        min_rating = 0 if want_all else 50
+    try:
+        max_rating = max(min_rating, min(100, int(data.get("max_rating") if data.get("max_rating") is not None else fallback.get("max_rating") or 100)))
+    except (TypeError, ValueError):
+        max_rating = 100
+    time_range = data.get("time_range") if data.get("time_range") in ("24h", "week") else fallback.get("time_range") or "week"
+    scrape = bool(data.get("scrape"))
+    tailor = bool(data.get("tailor"))
+    reassess = bool(data.get("reassess")) or tailor
+    act = data.get("act")
+    if act is None:
+        act = scrape or tailor or reassess
+    reply = str(data.get("reply") or "").strip()
+    plan = {
+        "roles": roles,
+        "scrape": scrape,
+        "tailor": tailor,
+        "reassess": reassess,
+        "top_n": top_n,
+        "min_rating": min_rating if not want_all else 0,
+        "max_rating": max_rating if not want_all else 100,
+        "time_range": time_range,
+        "max_pulls": min(200, max(50, min(top_n, 50) * 5)),
+        "all": want_all,
+        "act": bool(act),
+        "followup": bool(data.get("followup") or fallback.get("followup")),
+    }
+    plan["summary"] = _plan_summary(plan)
+    plan["reply"] = reply or _describe_plan(plan, followup=plan["followup"])
+    return plan
+
+
+def _conversation_plan(message: str, inventory: dict, view_role: str = "") -> dict:
+    fallback = _heuristic_plan(message, inventory, view_role)
+    if not llm_available():
+        return fallback
+    history = CHAT_STATE.get("messages") or []
+    recent = history[-12:]
+    last = CHAT_STATE.get("last_plan")
+    try:
+        data = complete_json(
+            (
+                "You are the Bengaluru job-hunt agent. You only handle fetching jobs, "
+                "scoring them, tailoring resumes, and re-scoring. Be conversational. "
+                "Use the chat history. Follow-ups like 'do the same with 30' inherit the "
+                "previous plan and only change what the user named. "
+                "If they ask a question or chat without asking you to act, set act=false "
+                "and just reply. If they want work done, set act=true and choose scrape, "
+                "tailor, and/or reassess yourself. Do not scrape unless they want new jobs "
+                "or a refresh. 'All items in the table' means no scrape, every row. "
+                "Return JSON only."
+            ),
+            (
+                f"Open tab: {view_role or 'unknown'}.\n"
+                f"Table inventory JSON: {inventory}\n"
+                f"Last action plan JSON: {last}\n"
+                f"Recent chat JSON: {recent}\n"
+                f"Latest user message: {message}\n\n"
+                "Return JSON with:\n"
+                "reply (1-3 conversational sentences),\n"
+                "act (boolean),\n"
+                "followup (boolean),\n"
+                "scrape, tailor, reassess (booleans),\n"
+                "roles (array of em and/or tpm),\n"
+                "top_n (integer 1-50, or all),\n"
+                "all (boolean),\n"
+                "min_rating, max_rating (0-100),\n"
+                "time_range (24h or week)."
+            ),
+            timeout=60,
+        )
+    except Exception:
+        return fallback
+    if not isinstance(data, dict):
+        return fallback
+    return _normalize_llm_plan(data, fallback)
 
 
 def _inventory() -> dict:
@@ -286,16 +484,19 @@ def _execute(message: str, view_role: str = "") -> None:
 
     try:
         inventory = _inventory()
-        plan = _heuristic_plan(message, inventory, view_role)
-        _set(plan=plan, focus_role=plan["roles"][0])
+        plan = _conversation_plan(message, inventory, view_role)
+        _set(plan=plan, focus_role=(plan.get("roles") or [view_role or "em"])[0])
+        _append("assistant", plan.get("reply") or _describe_plan(plan, followup=bool(plan.get("followup"))))
+        if not plan.get("act"):
+            return
+        _set(last_plan=plan)
         save_settings({"time_range": plan["time_range"], "max_pulls": plan["max_pulls"]})
-        _append("assistant", f"Plan: {plan['summary']}")
 
         summaries = []
         for role_id in plan["roles"]:
             summaries.append(_run_role(role_id, plan))
 
-        lines = ["Done. Tables are updated."]
+        lines = ["Done — the table is updated."]
         for item in summaries:
             role = item["role"].upper()
             lines.append(
