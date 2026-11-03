@@ -27,6 +27,7 @@ let latestData = {
 };
 let lastTableSignature = "";
 let lastChatSignature = "";
+let lastChatRunning = false;
 let chatOpen = false;
 let currentTimeRange = "week";
 let currentMaxPulls = 50;
@@ -365,11 +366,21 @@ function paintChat() {
 function maybeFocusChatRole() {
   const chat = latestData.chat || {};
   const role = chat.focus_role;
-  if (!chat.running || (role !== "em" && role !== "tpm")) {
+  const running = Boolean(chat.running);
+  const started = running && !lastChatRunning;
+  const finished = !running && lastChatRunning;
+  lastChatRunning = running;
+  if (finished) {
+    lastTableSignature = "";
+  }
+  if ((role !== "em" && role !== "tpm") || (!started && !finished)) {
     return;
   }
-  if (currentView === "resumes") {
+  if (currentView !== role) {
+    lastTableSignature = "";
     setView(role, true);
+  } else if (finished) {
+    paintView();
   }
 }
 
@@ -378,7 +389,10 @@ async function sendChatMessage(text) {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: text }),
+      body: JSON.stringify({
+        message: text,
+        role: currentView === "em" || currentView === "tpm" ? currentView : "",
+      }),
   });
   let payload = {};
   try {
