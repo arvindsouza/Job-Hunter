@@ -422,7 +422,16 @@ def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> li
                 "resume": {
                     "summary": tailored.get("summary"),
                     "skills": (tailored.get("skills") or [])[:16],
-                    "experience": (tailored.get("experience") or [])[:5],
+                    "experience": [
+                        {
+                            "title": role.get("title"),
+                            "company": role.get("company"),
+                            "dates": role.get("dates"),
+                            "bullets": (role.get("bullets") or [])[:4],
+                        }
+                        for role in (tailored.get("experience") or [])
+                        if isinstance(role, dict)
+                    ],
                 },
                 "description": (item.get("description") or "").strip()[:1800]
                 or "(No job description was available. Judge from the title and company only.)",

@@ -178,23 +178,182 @@ def _chunks(items: list, size: int = 5):
         yield items[index : index + size]
 
 
-def _tailor_prompt(role: str, resume_text: str, context: dict, packed: list[dict], score: bool) -> dict:
+_DATE_RANGE = re.compile(
+    r"\d{1,2}/\d{4}\s*[-–]\s*(?:\d{1,2}/\d{4}|Present|Current)",
+    re.I,
+)
+_TITLE_AFTER_DATES = re.compile(
+    r"^\s*(.+?)\s*\([^)]+\)\s+",
+)
+_TITLE_BEFORE_VERB = re.compile(
+    r"^\s*([A-Z][A-Za-z0-9 /&,'-]{2,90}?)"
+    r"(?=\s+(?:Directed|Led|Co-led|Built|Developed|Accelerated|Resolved|"
+    r"Mapped|Supported|Assisted|Worked|Created|Optimized|Orchestrated|"
+    r"Drove|Championed|Spearheaded|Owns|Shaped|Stayed|Scaled))",
+)
+_TITLE_TAIL = re.compile(
+    r"(?i)((?:software|technical|front[- ]?end|ui/?ux|engineering|senior|staff|principal|product)"
+    r"[a-z0-9 /&'+-]*"
+    r"(?:manager|lead|developer|engineer|intern(?:ship)?|architect|director|designer))\s*$"
+)
+
+
+def _collapse_ws(text: str) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _norm_label(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+
+
+def _experience_block(resume_text: str) -> str:
+    collapsed = _collapse_ws(resume_text)
+    match = re.search(
+        r"(?:professional experience|experience)\s+(.+?)(?:\beducation\b|$)",
+        collapsed,
+        re.I,
+    )
+    return match.group(1).strip() if match else collapsed
+
+
+def _header_company_title(before: str, after: str) -> tuple[str, str, str]:
+    chunk = before.strip()
+    if "●" in chunk:
+        chunk = chunk.rsplit("●", 1)[-1].strip()
+    chunk = re.split(r"(?<=[.!?])\s+", chunk)[-1].strip(" •●-")
+    leftover = after
+    if "|" in chunk:
+        left, right = chunk.rsplit("|", 1)
+        company = left.strip()
+        right = right.strip()
+        loc_title = _TITLE_TAIL.search(right)
+        title = loc_title.group(1).strip() if loc_title else right
+        return company, title, leftover
+    company = chunk
+    titled = _TITLE_AFTER_DATES.match(after) or _TITLE_BEFORE_VERB.match(after)
+    if titled:
+        return company, titled.group(1).strip(), after[titled.end() :]
+    return company, "", leftover
+
+
+def _split_bullets(blob: str) -> list[str]:
+    text = (blob or "").strip(" •●-")
+    if not text:
+        return []
+    if "●" in text:
+        parts = [part.strip(" •●-") for part in text.split("●")]
+    else:
+        parts = [part.strip() for part in re.split(r"(?<=[.!?])\s+", text)]
+    bullets = []
+    for part in parts:
+        cleaned = re.sub(r"\s+", " ", part).strip(" •●-")
+        if len(cleaned) < 12:
+            continue
+        if len(cleaned.split()) <= 6 and not re.search(
+            r"\b(ed|ing|ment|tion|team|platform|software)\b", cleaned, re.I
+        ):
+            continue
+        bullets.append(cleaned)
+    return bullets[:12]
+
+
+def parse_source_experience(resume_text: str) -> list[dict]:
+    """Keep every dated role from the uploaded resume, including internships."""
+    section = _experience_block(resume_text)
+    matches = list(_DATE_RANGE.finditer(section))
+    roles: list[dict] = []
+    for index, match in enumerate(matches):
+        next_start = matches[index + 1].start() if index + 1 < len(matches) else len(section)
+        before = section[: match.start()]
+        after = section[match.end() : next_start]
+        company, title, leftover = _header_company_title(before, after)
+        if not _norm_label(company):
+            continue
+        roles.append(
+            {
+                "title": title or "Role",
+                "company": company,
+                "dates": match.group(0),
+                "bullets": _split_bullets(leftover),
+            }
+        )
+    return roles
+
+
+def _role_keys(role: dict) -> set[str]:
+    company = _norm_label(role.get("company"))
+    dates = _norm_label(role.get("dates"))
+    title = _norm_label(role.get("title"))
+    keys = set()
+    if company and dates:
+        keys.add(f"{company}|{dates}")
+    if company and title:
+        keys.add(f"{company}|{title}")
+    return keys
+
+
+def restore_source_experience(source_roles: list[dict], tailored_roles) -> list[dict]:
+    """Rewrite bullets, but never drop a source employer/role."""
+    tailored = [row for row in (tailored_roles or []) if isinstance(row, dict)]
+    used: set[int] = set()
+    restored: list[dict] = []
+    for source in source_roles:
+        source_keys = _role_keys(source)
+        match_index = None
+        for index, row in enumerate(tailored):
+            if index in used:
+                continue
+            if source_keys & _role_keys(row):
+                match_index = index
+                break
+        if match_index is None:
+            restored.append(dict(source))
+            continue
+        used.add(match_index)
+        merged = dict(tailored[match_index])
+        merged["company"] = _plain(merged.get("company")) or source["company"]
+        merged["title"] = _plain(merged.get("title")) or source["title"]
+        merged["dates"] = _plain(merged.get("dates")) or source["dates"]
+        bullets = [
+            _plain(item) for item in (merged.get("bullets") or []) if _plain(item)
+        ]
+        merged["bullets"] = bullets or list(source.get("bullets") or [])
+        restored.append(merged)
+    return restored
+
+
+def _tailor_prompt(
+    role: str,
+    resume_text: str,
+    context: dict,
+    packed: list[dict],
+    score: bool,
+    source_roles: list[dict],
+) -> dict:
     extra = (
         " Also score each tailored resume against its JD in the same object "
         "(rating, decision, why, reasoning, matched, missed, note)."
         if score
         else ""
     )
+    roster = [
+        {"title": item.get("title"), "company": item.get("company"), "dates": item.get("dates")}
+        for item in source_roles
+    ]
     return complete_json(
         (
             "You rewrite the same source resume for several job applications. "
             "Stay faithful to the source. Do not invent employers, titles, degrees, dates, or skills. "
-            "You may reorder, tighten, and emphasize relevant work. Return JSON only. "
-            "Use double-quoted JSON keys only."
+            "Keep every experience role from REQUIRED EXPERIENCE ROSTER. Never drop, merge away, "
+            "or omit internships or earlier employers. You may rewrite and reorder bullets and "
+            "put the most relevant roles first, but the experience array must still contain "
+            "one object per roster row. Return JSON only. Use double-quoted JSON keys only."
         ),
         (
             f"Target role family: {ROLE_LABELS[role]}.\n"
             f"CANDIDATE PROFILE JSON:\n{json.dumps(context, ensure_ascii=False)[:8000]}\n\n"
+            f"REQUIRED EXPERIENCE ROSTER (keep all {len(roster)} roles):\n"
+            f"{json.dumps(roster, ensure_ascii=False)}\n\n"
             f"ORIGINAL RESUME TEXT:\n{resume_text}\n\n"
             f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
             "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
@@ -204,7 +363,7 @@ def _tailor_prompt(role: str, resume_text: str, context: dict, packed: list[dict
             "name, contact (one line of email/phone/location),\n"
             "summary (4-6 sentences tailored to that job),\n"
             "skills (array of short skill phrases, 10-18 items, job-relevant first),\n"
-            "experience (array of {title, company, dates, bullets: 3-6 strings}),\n"
+            "experience (array with EVERY roster role as {title, company, dates, bullets}),\n"
             "education (array of strings or {school, degree, dates}),\n"
             "additional (optional array of short extras).\n"
             f"{extra}"
@@ -228,10 +387,16 @@ def _pack_tailor_jobs(indexed_jobs: list[tuple[int, dict]]) -> list[dict]:
     return packed
 
 
-def _save_from_payload_row(job: dict, row: dict | None, score: bool) -> dict:
+def _save_from_payload_row(
+    job: dict, row: dict | None, score: bool, source_roles: list[dict]
+) -> dict:
     resume = (row or {}).get("resume") if isinstance(row, dict) else None
     if not isinstance(resume, dict) or not resume.get("name"):
         return {"ok": False, "error": "LLM returned no resume."}
+    if source_roles:
+        resume["experience"] = restore_source_experience(
+            source_roles, resume.get("experience")
+        )
     try:
         saved = _save_tailored_resume(job.get("company", ""), job.get("title", ""), resume)
     except Exception as exc:
@@ -259,6 +424,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
 
     resume_text = resume_path.read_text(encoding="utf-8")[:10000]
     context = load_context(role) or {}
+    source_roles = parse_source_experience(resume_text)
     results: list[dict] = [{"ok": False, "error": "LLM returned no resume."} for _ in jobs]
 
     def run_chunk(indexed: list[tuple[int, dict]]) -> None:
@@ -266,7 +432,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
             return
         packed = _pack_tailor_jobs(indexed)
         try:
-            payload = _tailor_prompt(role, resume_text, context, packed, score)
+            payload = _tailor_prompt(role, resume_text, context, packed, score, source_roles)
             rows = payload.get("jobs") if isinstance(payload, dict) else None
             by_id = {}
             if isinstance(rows, list):
@@ -276,7 +442,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
             missing: list[tuple[int, dict]] = []
             for global_index, job in indexed:
                 row = by_id.get(f"j{global_index + 1}")
-                saved = _save_from_payload_row(job, row, score)
+                saved = _save_from_payload_row(job, row, score, source_roles)
                 if saved.get("ok"):
                     results[global_index] = saved
                 else:
