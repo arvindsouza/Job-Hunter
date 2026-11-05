@@ -597,7 +597,12 @@ def fetch_linkedin_guest_details(url: str) -> dict:
             f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
         ).decode("utf-8", errors="replace")
     except Exception:
-        return details
+        try:
+            page_html = http_get(
+                f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{job_id}"
+            ).decode("utf-8", errors="replace")
+        except Exception:
+            return details
     match = re.search(
         r'<div[^>]*show-more-less-html__markup[\s\S]*?</div>',
         page_html,
@@ -619,6 +624,9 @@ def fetch_job_details(page, url: str) -> dict:
         guest = fetch_linkedin_guest_details(url)
         if guest.get("description"):
             return guest
+        # Do not open every LinkedIn JD in Chrome. Guest HTML is enough, and
+        # a login wall makes page.goto hang for ~30s per job.
+        return guest
     if page is None:
         return details
     try:
@@ -1008,19 +1016,45 @@ def empty_jobs() -> dict[str, list]:
     return {role: [] for role in ALL_ROLES}
 
 
+def empty_running_by_role() -> dict[str, bool]:
+    return {role: False for role in ALL_ROLES}
+
+
+def empty_status_by_role() -> dict[str, str]:
+    return {role: "Idle" for role in ALL_ROLES}
+
+
 def read_jobs_file() -> dict:
     path = UI_DIR / "jobs.json"
     if not path.exists():
-        return {"status": "Idle", "running": False, "running_by_role": {}, "jobs": empty_jobs()}
+        return {
+            "status": "Idle",
+            "running": False,
+            "running_by_role": empty_running_by_role(),
+            "status_by_role": empty_status_by_role(),
+            "jobs": empty_jobs(),
+        }
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
-        return {"status": "Idle", "running": False, "running_by_role": {}, "jobs": empty_jobs()}
+        return {
+            "status": "Idle",
+            "running": False,
+            "running_by_role": empty_running_by_role(),
+            "status_by_role": empty_status_by_role(),
+            "jobs": empty_jobs(),
+        }
     jobs = data.get("jobs") or empty_jobs()
+    running_by_role = data.get("running_by_role") or {}
+    status_by_role = data.get("status_by_role") or {}
     for role in ALL_ROLES:
         jobs.setdefault(role, [])
+        running_by_role.setdefault(role, False)
+        status_by_role.setdefault(role, "Idle")
     data["jobs"] = jobs
-    data.setdefault("running_by_role", {})
+    data["running_by_role"] = running_by_role
+    data["status_by_role"] = status_by_role
+    data["running"] = any(running_by_role.values())
     return data
 
 
@@ -1037,9 +1071,12 @@ def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
     with UI_STATE_LOCK:
         snapshot = read_jobs_file()
         snapshot["jobs"][role] = rows
-        running_by_role = snapshot.get("running_by_role") or {}
+        running_by_role = snapshot.get("running_by_role") or empty_running_by_role()
+        status_by_role = snapshot.get("status_by_role") or empty_status_by_role()
         running_by_role[role] = running
+        status_by_role[role] = status
         snapshot["running_by_role"] = running_by_role
+        snapshot["status_by_role"] = status_by_role
         snapshot["running"] = any(running_by_role.values())
         snapshot["status"] = status
         write_jobs_snapshot(snapshot)
@@ -1091,11 +1128,14 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         return
 
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store, max-age=0")
+        super().end_headers()
+
     def _cors(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Filename")
-        self.send_header("Cache-Control", "no-store")
 
     def _send_json(self, payload: dict, status: int = 200) -> None:
         body = json.dumps(payload).encode("utf-8")
@@ -1242,9 +1282,13 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
                 return
             from orchestrator import start_chat_instruction
 
+            requested = body.get("roles")
+            if not isinstance(requested, list):
+                requested = []
             result = start_chat_instruction(
                 str(body.get("message") or ""),
                 str(body.get("role") or "").lower(),
+                [str(role).lower() for role in requested],
             )
             self._send_json(result, 200 if result.get("ok") else 400)
             return
@@ -1374,21 +1418,22 @@ def run_agent(role_id: str) -> int:
             except Exception as exc:
                 publish_ui(found, f"{label}: LinkedIn guest search failed: {exc}", True, role)
                 print(f"\nLinkedIn guest search failed.\n{exc}", file=sys.stderr)
-            try:
-                page.goto(build_search_url(role), wait_until="domcontentloaded", timeout=20000)
-                dismiss_cookie_banner(page)
-                for job in extract_jobs(page, role):
-                    if len(found) >= pull_limit:
-                        break
-                    key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
-                    if key in seen:
-                        continue
-                    seen.add(key)
-                    found.append(job)
-                    publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
-            except PlaywrightTimeoutError as exc:
-                publish_ui(found, f"{label}: LinkedIn browser timed out; using guest results", True, role)
-                print(f"\nLinkedIn browser timed out.\n{exc}", file=sys.stderr)
+            if len(found) < pull_limit:
+                try:
+                    page.goto(build_search_url(role), wait_until="domcontentloaded", timeout=20000)
+                    dismiss_cookie_banner(page)
+                    for job in extract_jobs(page, role):
+                        if len(found) >= pull_limit:
+                            break
+                        key = job["link"] if job["link"] != "Link not found" else f"{job['title']}|{job['company']}"
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        found.append(job)
+                        publish_ui(found, f"{label}: found {len(found)} listing(s)", True, role)
+                except PlaywrightTimeoutError as exc:
+                    publish_ui(found, f"{label}: LinkedIn browser timed out; using guest results", True, role)
+                    print(f"\nLinkedIn browser timed out.\n{exc}", file=sys.stderr)
 
             publish_ui(found, f"{label}: searching Instahyre", True, role)
             try:

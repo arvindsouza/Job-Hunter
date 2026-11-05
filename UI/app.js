@@ -27,8 +27,9 @@ let latestData = {
 };
 let lastTableSignature = "";
 let lastChatSignature = "";
-let lastChatRunning = false;
+let lastAgentRunning = { em: false, tpm: false };
 let chatOpen = false;
+let chatTarget = "em";
 let currentTimeRange = "week";
 let currentMaxPulls = 50;
 
@@ -67,11 +68,26 @@ function jobsAtOrAboveMin(jobs) {
 }
 
 function roleIsRunning(data, viewId) {
-  const role = VIEWS[viewId].key;
-  if (data.running_by_role && role in data.running_by_role) {
-    return Boolean(data.running_by_role[role]);
+  if (viewId !== "em" && viewId !== "tpm") {
+    return false;
   }
-  return Boolean(data.running);
+  const key = VIEWS[viewId].key;
+  const scrapeBusy = Boolean((data.running_by_role || {})[key]);
+  const chatBusy = Boolean((data.chat || {}).running_by_agent && data.chat.running_by_agent[viewId]);
+  const procBusy = Boolean((data.agent_procs || {})[viewId]);
+  return scrapeBusy || chatBusy || procBusy;
+}
+
+function roleStatus(data, viewId) {
+  if (viewId !== "em" && viewId !== "tpm") {
+    return "";
+  }
+  const key = VIEWS[viewId].key;
+  const status = ((data.status_by_role || {})[key] || "").trim();
+  if (status) {
+    return status;
+  }
+  return roleIsRunning(data, viewId) ? "Working…" : "Idle";
 }
 
 function renderTable(jobs, running, emptyRun) {
@@ -174,6 +190,7 @@ function normalizePayload(payload) {
       status: payload.status || "",
       running: Boolean(payload.running),
       running_by_role: payload.running_by_role || {},
+      status_by_role: payload.status_by_role || {},
       agent_procs: payload.agent_procs || { em: false, tpm: false },
       settings: { time_range: timeRange, max_pulls: pulls },
       jobs: payload.jobs,
@@ -270,8 +287,10 @@ function paintView() {
   const view = VIEWS[currentView];
   document.getElementById("view-title").textContent = view.title;
   document.querySelectorAll(".nav-tab").forEach((button) => {
-    const active = button.dataset.view === currentView;
+    const viewId = button.dataset.view;
+    const active = viewId === currentView;
     button.classList.toggle("is-active", active);
+    button.classList.toggle("is-busy", roleIsRunning(latestData, viewId));
     if (active) {
       button.setAttribute("aria-current", "page");
     } else {
@@ -284,8 +303,12 @@ function paintView() {
 
   const emJobs = jobsAtOrAboveMin(latestData.jobs["Software Engineering Manager"]);
   const tpmJobs = jobsAtOrAboveMin(latestData.jobs["Technical Program Manager"]);
-  document.getElementById("em-count").textContent = `(${emJobs.length})`;
-  document.getElementById("tpm-count").textContent = `(${tpmJobs.length})`;
+  document.getElementById("em-count").textContent = roleIsRunning(latestData, "em")
+    ? `(${emJobs.length} working)`
+    : `(${emJobs.length})`;
+  document.getElementById("tpm-count").textContent = roleIsRunning(latestData, "tpm")
+    ? `(${tpmJobs.length} working)`
+    : `(${tpmJobs.length})`;
 
   const statusEl = document.getElementById("live-status");
   const jobsPanel = document.getElementById("jobs-panel");
@@ -298,12 +321,12 @@ function paintView() {
   headerBtn.classList.toggle("is-hidden", isResumes);
   const procs = latestData.agent_procs || {};
   if (!isResumes) {
-    const busy = Boolean(procs[currentView]);
+    const busy = roleIsRunning(latestData, currentView);
     headerBtn.disabled = busy;
     headerBtn.textContent = busy ? "Running…" : "Fresh run";
   }
   document.querySelectorAll("[data-run-role]").forEach((button) => {
-    const busy = Boolean(procs[button.dataset.runRole]);
+    const busy = roleIsRunning(latestData, button.dataset.runRole);
     button.disabled = busy;
     const label = button.dataset.runRole === "tpm" ? "TPM" : "EM";
     button.textContent = busy ? `Running ${label}…` : `Fresh ${label} run`;
@@ -314,11 +337,13 @@ function paintView() {
       statusEl.textContent = "Upload a PDF for each role. Extracted skills are stored in Assets/.";
       statusEl.classList.remove("done", "error");
     } else {
-      statusEl.textContent = latestData.status || (latestData.running ? "Scraping…" : "Idle");
-      statusEl.classList.toggle("done", !latestData.running && !/timed out/i.test(latestData.status || ""));
-      statusEl.classList.toggle("error", /timed out/i.test(latestData.status || ""));
+      const status = roleStatus(latestData, currentView);
+      const busy = roleIsRunning(latestData, currentView);
+      statusEl.textContent = status || (busy ? "Working…" : "Idle");
+      statusEl.classList.toggle("done", !busy && !/timed out/i.test(status || ""));
+      statusEl.classList.toggle("error", /timed out/i.test(status || ""));
       const jobs = jobsAtOrAboveMin(latestData.jobs[view.key]);
-      renderTable(jobs, roleIsRunning(latestData, currentView) || Boolean(procs[currentView]), view.emptyRun);
+      renderTable(jobs, busy, view.emptyRun);
     }
   }
   paintChat();
@@ -338,49 +363,124 @@ function setChatOpen(open) {
   }
 }
 
+function mentionedChatRoles(text) {
+  const value = String(text || "").toLowerCase();
+  if (/\b(both(?:\s+roles)?|each role|em and tpm|tpm and em)\b/.test(value)) {
+    return ["em", "tpm"];
+  }
+  const roles = [];
+  if (/\b(tpm|tpms|technical program|program manager)\b/.test(value)) {
+    roles.push("tpm");
+  }
+  if (
+    /\b(engineering managers?|eng managers?|engineering leads?|em roles?|em jobs?|em listings?)\b/.test(value) ||
+    /(^|[^\w])em($|[^\w])/.test(value)
+  ) {
+    roles.push("em");
+  }
+  return roles;
+}
+
+function agentBusy(role) {
+  return Boolean((latestData.chat || {}).running_by_agent && latestData.chat.running_by_agent[role]);
+}
+
+function selectedChatRoles() {
+  if (chatTarget === "both") {
+    return ["em", "tpm"];
+  }
+  if (currentView === "em" || currentView === "tpm") {
+    return [currentView];
+  }
+  if (chatTarget === "em" || chatTarget === "tpm") {
+    return [chatTarget];
+  }
+  return ["em"];
+}
+
+function idleSelectedRoles() {
+  return selectedChatRoles().filter((role) => !agentBusy(role));
+}
+
+function syncChatSend() {
+  const send = document.getElementById("chat-send");
+  const subtitle = document.getElementById("chat-subtitle");
+  if (!send) {
+    return;
+  }
+  const idle = idleSelectedRoles();
+  send.disabled = idle.length === 0;
+  send.textContent = idle.length === 0 ? "Working…" : "Send";
+  document.querySelectorAll("[data-chat-agent]").forEach((button) => {
+    const role = button.dataset.chatAgent;
+    const busy = role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
+    button.classList.toggle("is-active", role === chatTarget);
+    button.classList.toggle("is-busy", busy);
+    if (role === "both") {
+      button.textContent = busy ? "BOTH…" : "Both";
+    } else {
+      button.textContent = busy ? `${role.toUpperCase()}…` : role.toUpperCase();
+    }
+  });
+  if (subtitle) {
+    const idle = idleSelectedRoles();
+    if (chatTarget === "both") {
+      subtitle.textContent =
+        idle.length === 2
+          ? "This message starts EM and TPM together."
+          : idle.length === 1
+            ? `One agent is busy. Send will start ${idle[0].toUpperCase()} now.`
+            : "Both agents are working.";
+    } else if (idle.length === 0) {
+      subtitle.textContent = `${chatTarget.toUpperCase()} is working. Click TPM, EM, or Both to start the other.`;
+    } else {
+      subtitle.textContent = `Talking to ${chatTarget.toUpperCase()}. Click Both to run EM and TPM together.`;
+    }
+  }
+}
+
 function paintChat() {
   const chat = latestData.chat || { running: false, messages: [] };
-  const send = document.getElementById("chat-send");
-  send.disabled = Boolean(chat.running);
-  send.textContent = chat.running ? "Working…" : "Send";
+  syncChatSend();
   const messages = chat.messages || [];
-  const signature = JSON.stringify({ open: chatOpen, running: chat.running, messages });
+  const signature = JSON.stringify({
+    open: chatOpen,
+    view: currentView,
+    running_by_agent: chat.running_by_agent || {},
+    messages,
+  });
   if (signature === lastChatSignature) {
     return;
   }
   lastChatSignature = signature;
   const log = document.getElementById("chat-log");
   if (!messages.length) {
-    log.innerHTML = `<p class="chat-empty">Ask in plain English. Example: get 10 strong EM fits this week, tailor the top ones, re-score them, and tell me which to apply to. TPM requests go to the TPM agent.</p>`;
+    log.innerHTML = `<p class="chat-empty">Choose EM, TPM, or Both. Example: fetch 30, tailor, and re-score. Both runs the two agents at the same time.</p>`;
     return;
   }
   log.innerHTML = messages
-    .map(
-      (item) =>
-        `<div class="chat-bubble ${item.role === "user" ? "user" : "assistant"}">${escapeHtml(item.text || "")}</div>`
-    )
+    .map((item) => {
+      const tag = item.agent === "tpm" ? "TPM" : item.agent === "em" ? "EM" : "";
+      const tagHtml = tag ? `<span class="chat-agent">${tag}</span>` : "";
+      return `<div class="chat-bubble ${item.role === "user" ? "user" : "assistant"}">${tagHtml}${escapeHtml(item.text || "")}</div>`;
+    })
     .join("");
   log.scrollTop = log.scrollHeight;
 }
 
 function maybeFocusChatRole() {
   const chat = latestData.chat || {};
-  const role = chat.focus_role;
-  const running = Boolean(chat.running);
-  const started = running && !lastChatRunning;
-  const finished = !running && lastChatRunning;
-  lastChatRunning = running;
-  if (finished) {
-    lastTableSignature = "";
-  }
-  if ((role !== "em" && role !== "tpm") || (!started && !finished)) {
-    return;
-  }
-  if (currentView !== role) {
-    lastTableSignature = "";
-    setView(role, true);
-  } else if (finished) {
-    paintView();
+  const by = chat.running_by_agent || {};
+  for (const role of ["em", "tpm"]) {
+    const running = Boolean(by[role]);
+    const finished = !running && lastAgentRunning[role];
+    lastAgentRunning[role] = running;
+    if (finished) {
+      lastTableSignature = "";
+      if (currentView === role) {
+        paintView();
+      }
+    }
   }
 }
 
@@ -391,7 +491,8 @@ async function sendChatMessage(text) {
     headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: text,
-        role: currentView === "em" || currentView === "tpm" ? currentView : "",
+        role: chatTarget,
+        roles: idleSelectedRoles(),
       }),
   });
   let payload = {};
@@ -443,6 +544,9 @@ function setView(viewId, updateHash) {
     lastTableSignature = "";
   }
   currentView = viewId;
+  if (viewId === "em" || viewId === "tpm") {
+    chatTarget = viewId;
+  }
   if (updateHash) {
     const hash = hashForView(viewId);
     if (window.location.hash !== hash) {
@@ -672,6 +776,14 @@ document.getElementById("tpm-resume-input").addEventListener("change", (event) =
   event.target.value = "";
 });
 
+document.querySelectorAll("[data-chat-agent]").forEach((button) => {
+  button.addEventListener("click", () => {
+    chatTarget = button.dataset.chatAgent;
+    syncChatSend();
+    document.getElementById("chat-input").focus();
+  });
+});
+
 document.getElementById("chat-toggle").addEventListener("click", () => {
   setChatOpen(!chatOpen);
 });
@@ -684,7 +796,8 @@ document.getElementById("chat-form").addEventListener("submit", async (event) =>
   event.preventDefault();
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
-  if (!text || (latestData.chat && latestData.chat.running)) {
+  syncChatSend();
+  if (!text || idleSelectedRoles().length === 0) {
     return;
   }
   setChatOpen(true);
@@ -700,6 +813,10 @@ document.getElementById("chat-form").addEventListener("submit", async (event) =>
     lastChatSignature = "";
     paintChat();
   }
+});
+
+document.getElementById("chat-input").addEventListener("input", () => {
+  syncChatSend();
 });
 
 document.getElementById("chat-input").addEventListener("keydown", (event) => {

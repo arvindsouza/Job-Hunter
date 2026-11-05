@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bengaluru job matches</title>
-    <link rel="stylesheet" href="styles.css?v=chat2" />
+    <link rel="stylesheet" href="styles.css?v=chat9" />
   </head>
   <body>
     <div class="app">
@@ -75,8 +75,13 @@
       <section id="chat-panel" class="chat-panel" hidden>
         <header class="chat-header">
           <div>
-            <p class="chat-title">Job hunt agent</p>
-            <p class="chat-subtitle">Tell it what to find. It routes EM/TPM and updates the tables.</p>
+            <p class="chat-title">EM + TPM agents</p>
+            <p id="chat-subtitle" class="chat-subtitle">Pick EM, TPM, or Both. Both starts the two agents at the same time.</p>
+            <div class="chat-agent-switch" role="group" aria-label="Which agent to message">
+              <button type="button" id="chat-agent-em" data-chat-agent="em">EM</button>
+              <button type="button" id="chat-agent-tpm" data-chat-agent="tpm">TPM</button>
+              <button type="button" id="chat-agent-both" data-chat-agent="both">Both</button>
+            </div>
           </div>
           <button type="button" id="chat-close" class="chat-close" aria-label="Close chat">×</button>
         </header>
@@ -85,7 +90,7 @@
           <textarea
             id="chat-input"
             rows="3"
-            placeholder="Get me 10 strong EM fits this week, tailor the top ones, re-score them, and tell me which to apply to"
+            placeholder="Fetch 30, tailor, and re-score. Use Both to run EM and TPM together."
           ></textarea>
           <button type="submit" id="chat-send" class="chat-send">Send</button>
         </form>
@@ -93,6 +98,6 @@
     </div>
 
     <script src="jobs-data.js"></script>
-    <script src="app.js?v=chat3"></script>
+    <script src="app.js?v=chat10"></script>
   </body>
 </html>
