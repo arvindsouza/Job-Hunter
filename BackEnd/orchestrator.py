@@ -610,6 +610,30 @@ def _llm_decide(role_id: str, plan: dict, state: dict, last: dict | None) -> tup
     return {"tool": tool, "args": args, "reason": str(payload.get("reason") or "")}, None
 
 
+def _reload_fit_row(role_id: str, state: dict, title: str, company: str, link: str) -> dict | None:
+    from common import ROLE_META, read_jobs_file
+
+    rows = (read_jobs_file().get("jobs") or {}).get(ROLE_META[role_id]["search"]) or []
+    matched = None
+    for row in rows:
+        if row.get("title") != title or row.get("company") != company:
+            continue
+        if link and row.get("link") and row.get("link") != link:
+            continue
+        matched = row
+        break
+    if matched is None:
+        return None
+    for index, job in enumerate(state.get("fits") or []):
+        if _job_key(job) != (title, company):
+            continue
+        merged = dict(job)
+        merged.update(matched)
+        state["fits"][index] = merged
+        break
+    return matched
+
+
 def _apply_tool_result(state: dict, outcome: dict) -> None:
     tool = outcome.get("tool")
     if tool == "scrape" and outcome.get("ok"):
@@ -726,6 +750,18 @@ def _run_role(role_id: str, plan: dict) -> dict:
                 names = ", ".join(f"{job.get('title')} at {job.get('company')}" for job in fits[:5])
                 extra = f" (+{len(fits) - 5} more)" if len(fits) > 5 else ""
                 _append("assistant", f"{label}: working on {len(fits)} fit(s): {names}{extra}", role_id)
+        elif outcome.get("tool") in ("tailor_one", "reassess_one"):
+            title = str(outcome.get("title") or "")
+            company = str(outcome.get("company") or "")
+            row = _reload_fit_row(role_id, state, title, company, str(outcome.get("link") or ""))
+            row = row or (outcome.get("row") if isinstance(outcome.get("row"), dict) else {})
+            rating = row.get("rating")
+            parts = [f"{label}: updated {title} at {company}"]
+            if outcome.get("filename"):
+                parts.append(str(outcome["filename"]))
+            if isinstance(rating, (int, float)):
+                parts.append(f"{int(rating)}/100")
+            _append("assistant", " — ".join(parts), role_id)
         last = outcome if not outcome.get("ok") else None
     return {
         "role": role_id,
