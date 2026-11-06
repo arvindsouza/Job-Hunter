@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 import threading
 import time
+from pathlib import Path
 
 from llm import complete_json, llm_available
 from resume_tailor import reassess_jobs_batch, tailor_jobs_batch
@@ -12,15 +14,19 @@ from resume_tailor import reassess_jobs_batch, tailor_jobs_batch
 CHAT_LOCK = threading.Lock()
 CHAT_LOG: list[dict] = []
 CHAT_FOCUS = None
+CHAT_STATE_PATH = Path(__file__).resolve().parent.parent / "Assets" / "chat-state.json"
 
 
 def _new_agent(role_id: str) -> dict:
     return {
         "role": role_id,
         "running": False,
+        "inflight": 0,
         "plan": None,
         "last_plan": None,
         "messages": [],
+        "queue": [],
+        "status": "",
     }
 
 
@@ -30,15 +36,97 @@ AGENTS = {
 }
 
 
-def chat_snapshot() -> dict:
+def _persist_unlocked() -> None:
+    CHAT_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "focus": CHAT_FOCUS,
+        "log": CHAT_LOG[-40:],
+        "agents": {
+            role_id: {
+                "role": role_id,
+                "running": AGENTS[role_id]["running"],
+                "plan": AGENTS[role_id].get("plan"),
+                "last_plan": AGENTS[role_id].get("last_plan"),
+                "messages": list(AGENTS[role_id].get("messages") or [])[-40:],
+                "queue": list(AGENTS[role_id].get("queue") or []),
+                "status": AGENTS[role_id].get("status") or "",
+            }
+            for role_id in ("em", "tpm")
+        },
+    }
+    tmp = CHAT_STATE_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(CHAT_STATE_PATH)
+
+
+def _load_chat() -> None:
+    global CHAT_FOCUS, CHAT_LOG
+    if not CHAT_STATE_PATH.exists():
+        return
+    try:
+        data = json.loads(CHAT_STATE_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return
+    if not isinstance(data, dict):
+        return
+    was_running = False
     with CHAT_LOCK:
-        running_by_agent = {role_id: AGENTS[role_id]["running"] for role_id in ("em", "tpm")}
+        CHAT_FOCUS = data.get("focus") if data.get("focus") in ("em", "tpm") else None
+        CHAT_LOG = [item for item in (data.get("log") or []) if isinstance(item, dict)][-40:]
+        saved_agents = data.get("agents") if isinstance(data.get("agents"), dict) else {}
+        for role_id in ("em", "tpm"):
+            saved = saved_agents.get(role_id) if isinstance(saved_agents.get(role_id), dict) else {}
+            if saved.get("running"):
+                was_running = True
+            AGENTS[role_id]["plan"] = saved.get("plan")
+            AGENTS[role_id]["last_plan"] = saved.get("last_plan")
+            AGENTS[role_id]["messages"] = [
+                item for item in (saved.get("messages") or []) if isinstance(item, dict)
+            ][-40:]
+            AGENTS[role_id]["queue"] = [
+                item for item in (saved.get("queue") or []) if isinstance(item, dict)
+            ]
+            AGENTS[role_id]["status"] = str(saved.get("status") or "")
+            AGENTS[role_id]["running"] = False
+            AGENTS[role_id]["inflight"] = 0
+        if was_running:
+            CHAT_LOG.append(
+                {
+                    "role": "assistant",
+                    "text": "Server restarted. Agents are idle; previous in-flight work did not finish.",
+                }
+            )
+            del CHAT_LOG[:-40]
+            _persist_unlocked()
+
+
+def _agent_is_working(role_id: str) -> bool:
+    from common import agent_is_running
+
+    with CHAT_LOCK:
+        chat_busy = bool(AGENTS[role_id]["running"] or AGENTS[role_id].get("queue"))
+    return chat_busy or agent_is_running(role_id)
+
+
+def chat_snapshot() -> dict:
+    from common import agent_is_running
+
+    scrape = {role_id: agent_is_running(role_id) for role_id in ("em", "tpm")}
+    with CHAT_LOCK:
+        running_by_agent = {
+            role_id: bool(
+                AGENTS[role_id]["running"]
+                or AGENTS[role_id].get("queue")
+                or scrape[role_id]
+            )
+            for role_id in ("em", "tpm")
+        }
         running = any(running_by_agent.values())
         focus = CHAT_FOCUS
         plan = None
         last_plan = None
         for role_id in ("em", "tpm"):
-            if AGENTS[role_id]["running"]:
+            if running_by_agent[role_id]:
                 plan = AGENTS[role_id]["plan"]
                 focus = role_id
                 break
@@ -54,12 +142,34 @@ def chat_snapshot() -> dict:
             "messages": list(CHAT_LOG[-40:]),
             "agents": {
                 role_id: {
-                    "running": AGENTS[role_id]["running"],
+                    "running": running_by_agent[role_id],
                     "plan": AGENTS[role_id]["plan"],
+                    "status": AGENTS[role_id].get("status") or "",
+                    "queue": len(AGENTS[role_id].get("queue") or []),
                 }
                 for role_id in ("em", "tpm")
             },
         }
+
+
+def begin_agent_work(role_id: str, status: str = "") -> None:
+    with CHAT_LOCK:
+        agent = AGENTS[role_id]
+        agent["inflight"] = int(agent.get("inflight") or 0) + 1
+        agent["running"] = True
+        if status:
+            agent["status"] = status
+        _persist_unlocked()
+
+
+def end_agent_work(role_id: str) -> None:
+    with CHAT_LOCK:
+        agent = AGENTS[role_id]
+        agent["inflight"] = max(0, int(agent.get("inflight") or 0) - 1)
+        if agent["inflight"] == 0 and not agent.get("queue"):
+            agent["running"] = False
+            agent["status"] = ""
+        _persist_unlocked()
 
 
 def _append(speaker: str, text: str, agent: str | None = None) -> None:
@@ -72,6 +182,7 @@ def _append(speaker: str, text: str, agent: str | None = None) -> None:
         if agent in AGENTS:
             AGENTS[agent]["messages"].append(item)
             AGENTS[agent]["messages"] = AGENTS[agent]["messages"][-40:]
+        _persist_unlocked()
 
 
 def _set_agent(role_id: str, **kwargs) -> None:
@@ -80,6 +191,10 @@ def _set_agent(role_id: str, **kwargs) -> None:
         AGENTS[role_id].update(kwargs)
         if "running" in kwargs and kwargs["running"]:
             CHAT_FOCUS = role_id
+        _persist_unlocked()
+
+
+_load_chat()
 
 
 def _plan_summary(plan: dict) -> str:
@@ -606,7 +721,7 @@ def _execute_role(role_id: str, message: str, view_role: str = "") -> None:
     except Exception as exc:
         _append("assistant", f"{role_id.upper()} stopped: {exc}", role_id)
     finally:
-        _set_agent(role_id, running=False)
+        end_agent_work(role_id)
 
 
 def _dispatch_roles(message: str, view_role: str) -> list[str]:
@@ -614,10 +729,10 @@ def _dispatch_roles(message: str, view_role: str) -> list[str]:
     if mentioned:
         return mentioned
     preferred = view_role if view_role in ("em", "tpm") else (CHAT_FOCUS if CHAT_FOCUS in ("em", "tpm") else "em")
-    if not AGENTS[preferred]["running"]:
+    if not _agent_is_working(preferred):
         return [preferred]
     other = "tpm" if preferred == "em" else "em"
-    if not AGENTS[other]["running"]:
+    if not _agent_is_working(other):
         return [other]
     return [preferred]
 
@@ -635,8 +750,8 @@ def start_chat_instruction(
         explicit = ["em", "tpm"]
     view = view_role if view_role in ("em", "tpm") else ""
     roles = explicit or _dispatch_roles(text, view)
-    busy = [role_id for role_id in roles if AGENTS[role_id]["running"]]
-    idle = [role_id for role_id in roles if not AGENTS[role_id]["running"]]
+    busy = [role_id for role_id in roles if _agent_is_working(role_id)]
+    idle = [role_id for role_id in roles if not _agent_is_working(role_id)]
     if not idle:
         names = " and ".join(role_id.upper() for role_id in busy)
         return {
@@ -655,9 +770,10 @@ def start_chat_instruction(
     global CHAT_FOCUS
     CHAT_FOCUS = idle[0]
     for role_id in idle:
+        begin_agent_work(role_id, "Working…")
         with CHAT_LOCK:
-            AGENTS[role_id]["running"] = True
             AGENTS[role_id]["messages"].append({"role": "user", "text": text})
             AGENTS[role_id]["messages"] = AGENTS[role_id]["messages"][-40:]
+            _persist_unlocked()
         threading.Thread(target=_execute_role, args=(role_id, text, role_id), daemon=True).start()
     return {"ok": True, "chat": chat_snapshot()}
