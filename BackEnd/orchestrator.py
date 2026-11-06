@@ -526,6 +526,12 @@ def _inventory(role_id: str | None = None) -> dict:
     return inv
 
 
+AGENT_MAX_TAILORS = 30
+AGENT_MAX_MINUTES = 20
+AGENT_MAX_LLM_FAILS = 3
+AGENT_EARLY_STOP_HIGH = 10
+AGENT_EARLY_STOP_SCORE = 90
+
 DECIDE_SYSTEM = """You choose the next tool for a Bengaluru EM/TPM job-hunt agent.
 Allowed tools: scrape, list_fits, fetch_jd, tailor_one, reassess_one, update_row, stop.
 Return JSON only: {"tool": "...", "args": {}, "reason": "..."}.
@@ -561,12 +567,15 @@ def _rule_next(role_id: str, plan: dict, state: dict) -> dict:
         return {"tool": "stop", "args": {"reason": f"no jobs at {plan.get('min_rating')}+ yet"}}
     if not plan.get("tailor") and not plan.get("reassess"):
         return {"tool": "stop", "args": {"reason": "list only"}}
+    max_tailors = min(int(plan.get("top_n") or AGENT_MAX_TAILORS), AGENT_MAX_TAILORS)
     for job in fits:
         key = _job_key(job)
         if key in skipped or not key[0] or not key[1]:
             continue
         has_pdf = load_tailored_resume(job.get("company"), job.get("title"))
         if plan.get("tailor") and not has_pdf:
+            if int(state.get("tailored") or 0) >= max_tailors:
+                continue
             return {"tool": "tailor_one", "args": _job_args(job)}
         if plan.get("reassess") and has_pdf and not job.get("reassessed"):
             return {"tool": "reassess_one", "args": _job_args(job)}
@@ -608,6 +617,28 @@ def _llm_decide(role_id: str, plan: dict, state: dict, last: dict | None) -> tup
         first = jobs[0] if isinstance(jobs[0], dict) else {}
         args = {**first, **{k: v for k, v in args.items() if k != "jobs"}}
     return {"tool": tool, "args": args, "reason": str(payload.get("reason") or "")}, None
+
+
+def _budget_stop(plan: dict, state: dict) -> dict | None:
+    elapsed = time.time() - float(state.get("started") or time.time())
+    if elapsed >= AGENT_MAX_MINUTES * 60:
+        return {"tool": "stop", "args": {"reason": f"hit the {AGENT_MAX_MINUTES}-minute budget"}}
+    if int(state.get("llm_fails") or 0) >= AGENT_MAX_LLM_FAILS:
+        return {
+            "tool": "stop",
+            "args": {"reason": f"hit {AGENT_MAX_LLM_FAILS} consecutive LLM decision failures"},
+        }
+    high = 0
+    for job in state.get("fits") or []:
+        rating = job.get("rating")
+        if job.get("reassessed") and isinstance(rating, (int, float)) and rating >= AGENT_EARLY_STOP_SCORE:
+            high += 1
+    if high >= AGENT_EARLY_STOP_HIGH:
+        return {
+            "tool": "stop",
+            "args": {"reason": f"{high} jobs already at {AGENT_EARLY_STOP_SCORE}+; stopping early"},
+        }
+    return None
 
 
 def _reload_fit_row(role_id: str, state: dict, title: str, company: str, link: str) -> dict | None:
@@ -681,6 +712,7 @@ def _run_role(role_id: str, plan: dict) -> dict:
         "fits": None,
         "skipped": set(),
         "llm_fails": 0,
+        "started": time.time(),
     }
     if not load_agent_config(role_id):
         state["errors"].append(f"Upload a {label} resume first.")
@@ -713,9 +745,14 @@ def _run_role(role_id: str, plan: dict) -> dict:
             last = None
         else:
             action = _rule_next(role_id, plan, state)
+        budget = _budget_stop(plan, state)
+        if budget:
+            action = budget
         if action.get("tool") == "stop":
             reason = (action.get("args") or {}).get("reason") or "stopped"
-            if "no jobs" in str(reason):
+            if "budget" in str(reason) or "failures" in str(reason) or "stopping early" in str(reason):
+                _append("assistant", f"{label}: {reason}.", role_id)
+            elif "no jobs" in str(reason):
                 _append("assistant", f"{label}: {reason}.", role_id)
             elif state["fits"] and not plan.get("tailor") and not plan.get("reassess"):
                 names = ", ".join(
