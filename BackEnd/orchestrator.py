@@ -696,7 +696,75 @@ def _apply_tool_result(state: dict, outcome: dict) -> None:
             state["apply"].append(f"{key[0]} at {key[1]} ({int(rating)}/100)")
 
 
-def _run_role(role_id: str, plan: dict) -> dict:
+def pop_agent_queue(role_id: str) -> dict | None:
+    with CHAT_LOCK:
+        queue = AGENTS[role_id].setdefault("queue", [])
+        if not queue:
+            return None
+        item = queue.pop(0)
+        _persist_unlocked()
+        return item if isinstance(item, dict) else None
+
+
+def enqueue_agent_job(role_id: str, tool: str, args: dict) -> dict:
+    from common import ROLE_META, load_agent_config
+
+    if role_id not in AGENTS or tool not in ("tailor_one", "reassess_one"):
+        return {"ok": False, "error": "Unsupported row action.", "chat": chat_snapshot()}
+    if not load_agent_config(role_id):
+        return {
+            "ok": False,
+            "error": f"Upload a {ROLE_META[role_id]['label']} resume first.",
+            "chat": chat_snapshot(),
+        }
+    item = {
+        "tool": tool,
+        "args": args if isinstance(args, dict) else {},
+        "plan": {"scrape": False, "tailor": tool == "tailor_one", "reassess": True},
+    }
+    start_worker = False
+    with CHAT_LOCK:
+        AGENTS[role_id].setdefault("queue", []).append(item)
+        if not AGENTS[role_id]["running"]:
+            AGENTS[role_id]["inflight"] = int(AGENTS[role_id].get("inflight") or 0) + 1
+            AGENTS[role_id]["running"] = True
+            AGENTS[role_id]["status"] = f"Queued {tool}"
+            start_worker = True
+        _persist_unlocked()
+    title = str((args or {}).get("title") or "job")
+    verb = "tailor" if tool == "tailor_one" else "re-score"
+    _append("assistant", f"{ROLE_META[role_id]['label']}: queued {verb} for {title}.", role_id)
+    if start_worker:
+        threading.Thread(target=_run_queue_agent, args=(role_id,), daemon=True).start()
+    return {"ok": True, "queued": True, "chat": chat_snapshot()}
+
+
+def _run_queue_agent(role_id: str) -> None:
+    try:
+        plan = {
+            "scrape": False,
+            "tailor": True,
+            "reassess": True,
+            "top_n": 1,
+            "min_rating": 0,
+            "max_rating": 100,
+        }
+        item = _run_role(role_id, plan, queue_only=True)
+        lines = [
+            f"{role_id.upper()} queued work done.",
+            f"{item['tailored']} tailored, {item['reassessed']} re-scored.",
+        ]
+        for error in (item.get("errors") or [])[:4]:
+            if error:
+                lines.append(str(error))
+        _append("assistant", "\n".join(lines), role_id)
+    except Exception as exc:
+        _append("assistant", f"{role_id.upper()} queued work stopped: {exc}", role_id)
+    finally:
+        end_agent_work(role_id)
+
+
+def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
     from agent_tools import run_tool
     from common import ROLE_META, load_agent_config
 
@@ -719,14 +787,27 @@ def _run_role(role_id: str, plan: dict) -> dict:
         _append("assistant", f"{label}: skipped — no resume uploaded.", role_id)
         return state
 
-    if plan.get("scrape"):
-        _append("assistant", f"{label}: clearing the table and scraping new listings…", role_id)
-    else:
-        _append("assistant", f"{label}: skipping scrape and using the current table.", role_id)
+    if not queue_only:
+        if plan.get("scrape"):
+            _append("assistant", f"{label}: clearing the table and scraping new listings…", role_id)
+        else:
+            _append("assistant", f"{label}: skipping scrape and using the current table.", role_id)
 
     last: dict | None = None
     while True:
-        if last is not None and not last.get("ok"):
+        queued = pop_agent_queue(role_id)
+        tool_plan = plan
+        if queued:
+            action = {
+                "tool": str(queued.get("tool") or ""),
+                "args": queued.get("args") if isinstance(queued.get("args"), dict) else {},
+            }
+            if isinstance(queued.get("plan"), dict):
+                tool_plan = {**plan, **queued["plan"]}
+            last = None
+        elif queue_only:
+            break
+        elif last is not None and not last.get("ok"):
             decided = None
             error = None
             if llm_available():
@@ -745,10 +826,11 @@ def _run_role(role_id: str, plan: dict) -> dict:
             last = None
         else:
             action = _rule_next(role_id, plan, state)
-        budget = _budget_stop(plan, state)
-        if budget:
-            action = budget
-        if action.get("tool") == "stop":
+        if not queued:
+            budget = _budget_stop(plan, state)
+            if budget:
+                action = budget
+        if not queued and action.get("tool") == "stop":
             reason = (action.get("args") or {}).get("reason") or "stopped"
             if "budget" in str(reason) or "failures" in str(reason) or "stopping early" in str(reason):
                 _append("assistant", f"{label}: {reason}.", role_id)
@@ -771,7 +853,7 @@ def _run_role(role_id: str, plan: dict) -> dict:
                 status=f"{label}: {action['tool']} {args.get('title')} at {args.get('company')}",
             )
 
-        outcome = run_tool(role_id, action["tool"], action.get("args") or {}, plan)
+        outcome = run_tool(role_id, action["tool"], action.get("args") or {}, tool_plan)
         last = outcome
         if not outcome.get("ok"):
             err = str(outcome.get("error") or f"{action['tool']} failed")
