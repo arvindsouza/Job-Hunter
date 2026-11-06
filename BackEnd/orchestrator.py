@@ -9,7 +9,6 @@ import time
 from pathlib import Path
 
 from llm import complete_json, llm_available
-from resume_tailor import reassess_jobs_batch, tailor_jobs_batch
 
 CHAT_LOCK = threading.Lock()
 CHAT_LOG: list[dict] = []
@@ -527,167 +526,215 @@ def _inventory(role_id: str | None = None) -> dict:
     return inv
 
 
-def _wait_for_agent(role_id: str, timeout: int = 2400) -> bool:
-    from common import agent_is_running
-
-    deadline = time.time() + timeout
-    seen_running = False
-    started_deadline = time.time() + 90
-    while time.time() < deadline:
-        running = agent_is_running(role_id)
-        if running:
-            seen_running = True
-        elif seen_running:
-            time.sleep(1)
-            return True
-        elif time.time() > started_deadline:
-            return False
-        time.sleep(1)
-    return seen_running
+DECIDE_SYSTEM = """You choose the next tool for a Bengaluru EM/TPM job-hunt agent.
+Allowed tools: scrape, list_fits, fetch_jd, tailor_one, reassess_one, update_row, stop.
+Return JSON only: {"tool": "...", "args": {}, "reason": "..."}.
+Never tailor more than one job per call. Never pass a jobs array longer than 1.
+Prefer stop when the goal is done or the last error cannot be fixed.
+"""
 
 
-def _role_rows(role_id: str) -> list[dict]:
-    from common import ROLE_META, read_jobs_file
+def _job_args(job: dict) -> dict:
+    return {
+        "title": str(job.get("title") or "").strip(),
+        "company": str(job.get("company") or "").strip(),
+        "link": str(job.get("link") or "").strip(),
+        "note": job.get("note"),
+        "description": job.get("description") or "",
+    }
 
-    snapshot = read_jobs_file()
-    return list((snapshot.get("jobs") or {}).get(ROLE_META[role_id]["search"]) or [])
+
+def _job_key(job: dict) -> tuple[str, str]:
+    return (str(job.get("title") or "").strip(), str(job.get("company") or "").strip())
 
 
-def _pick_jobs(rows: list[dict], top_n: int, min_rating: int, max_rating: int = 100) -> list[dict]:
-    ranked = []
-    for row in rows:
+def _rule_next(role_id: str, plan: dict, state: dict) -> dict:
+    from resume_tailor import load_tailored_resume
+
+    skipped = state.get("skipped") or set()
+    if plan.get("scrape") and not state.get("scraped"):
+        return {"tool": "scrape", "args": {}}
+    if state.get("fits") is None:
+        return {"tool": "list_fits", "args": {}}
+    fits = state.get("fits") or []
+    if not fits:
+        return {"tool": "stop", "args": {"reason": f"no jobs at {plan.get('min_rating')}+ yet"}}
+    if not plan.get("tailor") and not plan.get("reassess"):
+        return {"tool": "stop", "args": {"reason": "list only"}}
+    for job in fits:
+        key = _job_key(job)
+        if key in skipped or not key[0] or not key[1]:
+            continue
+        has_pdf = load_tailored_resume(job.get("company"), job.get("title"))
+        if plan.get("tailor") and not has_pdf:
+            return {"tool": "tailor_one", "args": _job_args(job)}
+        if plan.get("reassess") and has_pdf and not job.get("reassessed"):
+            return {"tool": "reassess_one", "args": _job_args(job)}
+    return {"tool": "stop", "args": {"reason": "all selected jobs done"}}
+
+
+def _llm_decide(role_id: str, plan: dict, state: dict, last: dict | None) -> tuple[dict | None, str | None]:
+    from agent_tools import TOOLS
+
+    user = json.dumps(
+        {
+            "role": role_id,
+            "plan": {
+                key: plan.get(key)
+                for key in ("scrape", "tailor", "reassess", "top_n", "min_rating", "max_rating")
+            },
+            "inventory": _inventory(role_id),
+            "scraped": bool(state.get("scraped")),
+            "fit_count": len(state.get("fits") or []),
+            "tailored": state.get("tailored") or 0,
+            "reassessed": state.get("reassessed") or 0,
+            "last": last,
+            "errors": (state.get("errors") or [])[-3:],
+        },
+        ensure_ascii=False,
+    )[:8000]
+    try:
+        payload = complete_json(DECIDE_SYSTEM, user, attempts=2, timeout=45)
+    except Exception as exc:
+        return None, str(exc)
+    if not isinstance(payload, dict):
+        return None, "LLM returned no decision."
+    tool = str(payload.get("tool") or "")
+    if tool not in TOOLS:
+        return None, f"LLM picked invalid tool {tool!r}."
+    args = payload.get("args") if isinstance(payload.get("args"), dict) else {}
+    jobs = args.get("jobs")
+    if isinstance(jobs, list) and jobs:
+        first = jobs[0] if isinstance(jobs[0], dict) else {}
+        args = {**first, **{k: v for k, v in args.items() if k != "jobs"}}
+    return {"tool": tool, "args": args, "reason": str(payload.get("reason") or "")}, None
+
+
+def _apply_tool_result(state: dict, outcome: dict) -> None:
+    tool = outcome.get("tool")
+    if tool == "scrape" and outcome.get("ok"):
+        state["scraped"] = True
+        state["jobs"] = int(outcome.get("jobs") or 0)
+        state["fits"] = None
+        return
+    if tool == "list_fits" and outcome.get("ok"):
+        state["jobs"] = int(outcome.get("jobs") or 0)
+        state["fits"] = list(outcome.get("fits") or [])
+        return
+    if not outcome.get("ok"):
+        return
+    row = outcome.get("row") if isinstance(outcome.get("row"), dict) else {}
+    key = (str(outcome.get("title") or "").strip(), str(outcome.get("company") or "").strip())
+    for index, job in enumerate(state.get("fits") or []):
+        if _job_key(job) != key:
+            continue
+        merged = dict(job)
+        merged.update(row)
+        state["fits"][index] = merged
+        break
+    if outcome.get("tailored") or tool == "tailor_one":
+        state["tailored"] = int(state.get("tailored") or 0) + 1
+    if outcome.get("reassessed") or (row.get("reassessed") and tool == "reassess_one"):
+        state["reassessed"] = int(state.get("reassessed") or 0) + 1
         rating = row.get("rating")
-        if rating is None or rating == "":
-            ranked.append(row)
-            continue
-        try:
-            score = float(rating)
-        except (TypeError, ValueError):
-            ranked.append(row)
-            continue
-        if score < min_rating or score > max_rating:
-            continue
-        ranked.append(row)
-    ranked.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
-    return ranked[:top_n]
+        if isinstance(rating, (int, float)) and rating >= 80:
+            state["apply"].append(f"{key[0]} at {key[1]} ({int(rating)}/100)")
 
 
 def _run_role(role_id: str, plan: dict) -> dict:
-    from common import ROLE_META, fetch_job_details, load_agent_config, start_fresh_run, update_ui_job_row
+    from agent_tools import run_tool
+    from common import ROLE_META, load_agent_config
 
     label = ROLE_META[role_id]["label"]
-    result = {"role": role_id, "jobs": 0, "tailored": 0, "reassessed": 0, "apply": [], "errors": []}
+    state = {
+        "role": role_id,
+        "jobs": 0,
+        "tailored": 0,
+        "reassessed": 0,
+        "apply": [],
+        "errors": [],
+        "scraped": not bool(plan.get("scrape")),
+        "fits": None,
+        "skipped": set(),
+        "llm_fails": 0,
+    }
     if not load_agent_config(role_id):
-        result["errors"].append(f"Upload a {label} resume first.")
+        state["errors"].append(f"Upload a {label} resume first.")
         _append("assistant", f"{label}: skipped — no resume uploaded.", role_id)
-        return result
+        return state
 
-    if plan["scrape"]:
+    if plan.get("scrape"):
         _append("assistant", f"{label}: clearing the table and scraping new listings…", role_id)
-        started = start_fresh_run(role_id)
-        if not started.get("ok"):
-            result["errors"].append(started.get("error") or "Could not start scrape.")
-            _append("assistant", f"{label}: {result['errors'][-1]}", role_id)
-            return result
-        if not _wait_for_agent(role_id):
-            result["errors"].append("Scrape timed out.")
-            _append("assistant", f"{label}: scrape timed out.", role_id)
-            return result
-        _append("assistant", f"{label}: scrape finished. Updating the table.", role_id)
     else:
         _append("assistant", f"{label}: skipping scrape and using the current table.", role_id)
 
-    rows = _role_rows(role_id)
-    result["jobs"] = len(rows)
-    chosen = _pick_jobs(rows, plan["top_n"], plan["min_rating"], plan.get("max_rating", 100))
-    if not chosen:
-        _append("assistant", f"{label}: no jobs at {plan['min_rating']}+ yet.", role_id)
-        return result
+    last: dict | None = None
+    while True:
+        if last is not None and not last.get("ok"):
+            decided = None
+            error = None
+            if llm_available():
+                decided, error = _llm_decide(role_id, plan, state, last)
+            if decided:
+                action = decided
+                state["llm_fails"] = 0
+            else:
+                state["llm_fails"] = int(state.get("llm_fails") or 0) + 1
+                if error:
+                    state["errors"].append(error)
+                skip_key = _job_key(last)
+                if skip_key[0]:
+                    state["skipped"].add(skip_key)
+                action = _rule_next(role_id, plan, state)
+            last = None
+        else:
+            action = _rule_next(role_id, plan, state)
+        if action.get("tool") == "stop":
+            reason = (action.get("args") or {}).get("reason") or "stopped"
+            if "no jobs" in str(reason):
+                _append("assistant", f"{label}: {reason}.", role_id)
+            elif state["fits"] and not plan.get("tailor") and not plan.get("reassess"):
+                names = ", ".join(
+                    f"{job.get('title')} at {job.get('company')}" for job in (state["fits"] or [])[:5]
+                )
+                extra = f" (+{len(state['fits']) - 5} more)" if len(state["fits"]) > 5 else ""
+                _append("assistant", f"{label}: {len(state['fits'])} fit(s): {names}{extra}", role_id)
+            break
 
-    names = ", ".join(f"{job.get('title')} at {job.get('company')}" for job in chosen[:5])
-    extra = f" (+{len(chosen) - 5} more)" if len(chosen) > 5 else ""
-    _append("assistant", f"{label}: working on {len(chosen)} fit(s): {names}{extra}", role_id)
+        if action.get("tool") == "list_fits":
+            _set_agent(role_id, status=f"{label}: picking fits")
+        elif action.get("tool") in ("tailor_one", "reassess_one"):
+            args = action.get("args") or {}
+            _set_agent(
+                role_id,
+                status=f"{label}: {action['tool']} {args.get('title')} at {args.get('company')}",
+            )
 
-    if not plan["tailor"] and not plan["reassess"]:
-        return result
-
-    packed = []
-    for job in chosen:
-        title = str(job.get("title") or "").strip()
-        company = str(job.get("company") or "").strip()
-        link = str(job.get("link") or "").strip()
-        try:
-            details = fetch_job_details(None, link)
-            description = details.get("description") or ""
-        except Exception as exc:
-            result["errors"].append(f"Could not fetch JD for {title}: {exc}")
-            description = ""
-        packed.append({"title": title, "company": company, "link": link, "description": description, "note": job.get("note")})
-
-    outcomes: list[dict] = [{"ok": False} for _ in packed]
-    if plan["tailor"]:
-        _append(
-            "assistant",
-            f"{label}: tailoring{' and re-scoring' if plan['reassess'] else ''} {len(packed)} job(s) in batched LLM calls.",
-            role_id,
-        )
-        try:
-            outcomes = tailor_jobs_batch(role_id, packed, score=plan["reassess"])
-        except Exception as exc:
-            result["errors"].append(f"Batch tailor failed, retrying one job at a time: {exc}")
-            outcomes = []
-            for job in packed:
-                try:
-                    outcomes.append(tailor_jobs_batch(role_id, [job], score=plan["reassess"])[0])
-                except Exception as inner:
-                    outcomes.append({"ok": False, "error": f"{job.get('title')}: {inner}"})
-    elif plan["reassess"]:
-        _append("assistant", f"{label}: re-scoring {len(packed)} job(s) in batched LLM calls.", role_id)
-        try:
-            outcomes = reassess_jobs_batch(role_id, packed)
-        except Exception as exc:
-            result["errors"].append(f"Batch re-score failed, retrying one job at a time: {exc}")
-            outcomes = []
-            for job in packed:
-                try:
-                    outcomes.append(reassess_jobs_batch(role_id, [job])[0])
-                except Exception as inner:
-                    outcomes.append({"ok": False, "error": f"{job.get('title')}: {inner}"})
-
-    for job, outcome in zip(packed, outcomes):
-        if not outcome or not outcome.get("ok"):
-            err = (outcome or {}).get("error") or f"Failed {job['title']}"
-            result["errors"].append(str(err))
+        outcome = run_tool(role_id, action["tool"], action.get("args") or {}, plan)
+        last = outcome
+        if not outcome.get("ok"):
+            err = str(outcome.get("error") or f"{action['tool']} failed")
+            state["errors"].append(err)
+            _append("assistant", f"{label}: {err}", role_id)
             continue
-        if plan["tailor"]:
-            result["tailored"] += 1
-        row_update = outcome.get("row")
-        if plan["tailor"] and not row_update:
-            row_update = {
-                "note": " | ".join(
-                    part
-                    for part in [
-                        str(job.get("note") or "").strip(),
-                        f"Tailored resume saved ({outcome.get('filename') or 'Results/'})",
-                    ]
-                    if part
-                ),
-            }
-        if not row_update:
-            continue
-        updated = update_ui_job_row(
-            ROLE_META[role_id]["search"],
-            job["title"],
-            job["company"],
-            job["link"],
-            row_update,
-        )
-        if plan["reassess"] and (updated or {}).get("reassessed"):
-            result["reassessed"] += 1
-            rating = updated.get("rating")
-            if isinstance(rating, (int, float)) and rating >= 80:
-                result["apply"].append(f"{job['title']} at {job['company']} ({int(rating)}/100)")
-    return result
+        _apply_tool_result(state, outcome)
+        if outcome.get("tool") == "scrape":
+            _append("assistant", f"{label}: scrape finished. Updating the table.", role_id)
+        elif outcome.get("tool") == "list_fits":
+            fits = state.get("fits") or []
+            if fits:
+                names = ", ".join(f"{job.get('title')} at {job.get('company')}" for job in fits[:5])
+                extra = f" (+{len(fits) - 5} more)" if len(fits) > 5 else ""
+                _append("assistant", f"{label}: working on {len(fits)} fit(s): {names}{extra}", role_id)
+        last = outcome if not outcome.get("ok") else None
+    return {
+        "role": role_id,
+        "jobs": state["jobs"],
+        "tailored": state["tailored"],
+        "reassessed": state["reassessed"],
+        "apply": state["apply"],
+        "errors": state["errors"],
+    }
 
 
 def _execute_role(role_id: str, message: str, view_role: str = "") -> None:
