@@ -338,6 +338,39 @@ def _coerce_score(value) -> int | None:
     return max(0, min(100, int(match.group(1))))
 
 
+def _coerce_ctc(value) -> str:
+    if value is None or value == "":
+        return ""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        n = float(value)
+        if n <= 0:
+            return ""
+        return f"₹{int(round(n))} LPA"
+    text = str(value).strip()
+    if not text or text.lower() in ("unknown", "n/a", "na", "none"):
+        return ""
+    return text[:40]
+
+
+FIT_FIELDS = (
+    "id (the job id you were given),\n"
+    "rating (integer 0-100: 80+ strong apply, 65-79 apply, 50-64 maybe, below 50 skip),\n"
+    "decision (apply|maybe|skip),\n"
+    "why (one or two sentences on the strongest fit),\n"
+    "reasoning (3-5 sentences of actual comparison),\n"
+    "matched (array of 3-8 strengths),\n"
+    "missed (array of JD requirements weakly evidenced),\n"
+    "note (one practical caveat or empty string),\n"
+    "ctc (string: suggested total CTC the candidate should enter or ask for this "
+    "Bengaluru role in INR LPA, e.g. \"₹32-40 LPA\". Use company, seniority, JD, "
+    "and Bengaluru market. Empty string if you cannot estimate.),\n"
+    "callback (integer 0-100: chance of a recruiter callback if they apply with "
+    "THIS resume version. Not the same as rating. Rating is fit quality. Callback "
+    "is odds of hearing back given title match, competition, company, and how "
+    "clearly this resume evidences the JD)."
+)
+
+
 def _fit_result_from_payload(data: dict, description: str) -> dict:
     nested = data.get("resume") if isinstance(data.get("resume"), dict) else {}
     score = None
@@ -357,6 +390,20 @@ def _fit_result_from_payload(data: dict, description: str) -> dict:
     why = str(data.get("why") or nested.get("why") or "").strip()
     reasoning = str(data.get("reasoning") or nested.get("reasoning") or "").strip()
     note = str(data.get("note") or nested.get("note") or "").strip()
+    callback = None
+    for source in (data, nested):
+        if not isinstance(source, dict):
+            continue
+        callback = _coerce_score(source.get("callback") or source.get("callback_chance"))
+        if callback is not None:
+            break
+    ctc = ""
+    for source in (data, nested):
+        if not isinstance(source, dict):
+            continue
+        ctc = _coerce_ctc(source.get("ctc") or source.get("suggested_ctc"))
+        if ctc:
+            break
     return {
         "score": score,
         "title_note": why,
@@ -367,6 +414,8 @@ def _fit_result_from_payload(data: dict, description: str) -> dict:
         "why": why,
         "reasoning": reasoning,
         "note": note,
+        "ctc": ctc,
+        "callback": callback,
         "decision": str(data.get("decision") or "").strip().lower(),
         "method": "llm",
         "provider": llm_provider_name(),
@@ -447,14 +496,7 @@ def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> li
             f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
             "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
             "Each object must include:\n"
-            "id (the job id you were given),\n"
-            "rating (integer 0-100: 80+ strong apply, 65-79 apply, 50-64 maybe, below 50 skip),\n"
-            "decision (apply|maybe|skip),\n"
-            "why (one or two sentences on the strongest fit),\n"
-            "reasoning (3-5 sentences of actual comparison against this tailored resume),\n"
-            "matched (array of 3-8 strengths the tailored resume now shows for this JD),\n"
-            "missed (array of JD requirements still weakly evidenced),\n"
-            "note (one practical caveat or empty string)."
+            f"{FIT_FIELDS}"
         ),
         timeout=180,
     )
@@ -562,14 +604,7 @@ def analyze_jobs_fit_batch(
             f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
             "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
             "Each object must include:\n"
-            "id (the job id you were given),\n"
-            "rating (integer 0-100: 80+ strong apply, 65-79 apply, 50-64 maybe, below 50 skip),\n"
-            "decision (apply|maybe|skip),\n"
-            "why (one or two sentences on the strongest fit),\n"
-            "reasoning (3-5 sentences of actual comparison, not a skill list),\n"
-            "matched (array of 3-8 profile strengths that the JD needs),\n"
-            "missed (array of important JD requirements weakly evidenced on the resume),\n"
-            "note (one practical caveat or empty string)."
+            f"{FIT_FIELDS}"
         ),
         timeout=180,
     )

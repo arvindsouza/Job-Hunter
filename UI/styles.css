@@ -31,7 +31,7 @@ body {
   justify-content: flex-start;
   flex-wrap: wrap;
   gap: 8px 16px;
-  padding: 8px 24px;
+  padding: 8px 30px;
   min-height: 56px;
   border-bottom: 1px solid var(--line);
   background: #121a24;
@@ -130,9 +130,9 @@ body {
 }
 
 .page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 24px 24px 64px;
+  max-width: none;
+  margin: 0;
+  padding: 24px 30px 64px;
 }
 
 .view-header {
@@ -208,6 +208,10 @@ body {
   overflow: hidden;
 }
 
+#jobs-panel {
+  overflow: auto;
+}
+
 .is-hidden {
   display: none !important;
 }
@@ -272,7 +276,8 @@ body {
 }
 
 table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
 }
 
@@ -301,6 +306,7 @@ tr:last-child td {
 
 .table-wrap {
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .col-why,
@@ -358,19 +364,26 @@ a {
 }
 
 .col-job {
-  min-width: 180px;
+  width: 100px;
 }
 
 .col-company {
-  min-width: 140px;
+  width: 80px;
 }
 
 .col-link {
   min-width: 110px;
 }
 
-.col-rating {
+.col-rating,
+.col-callback {
   min-width: 90px;
+}
+
+.col-ctc {
+  min-width: 110px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .col-why,

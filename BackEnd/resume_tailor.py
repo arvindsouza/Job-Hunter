@@ -166,6 +166,8 @@ def _fit_ui_row(fit: dict, pdf_name: str) -> dict:
     )
     return {
         "rating": fit.get("score"),
+        "ctc": fit.get("ctc") or "",
+        "callback": fit.get("callback"),
         "why": fit.get("reasoning") or fit.get("why") or "",
         "weak_vs_jd": ", ".join((fit.get("missed") or [])[:6]),
         "note": note,

@@ -950,6 +950,8 @@ def job_to_ui_row(job: dict) -> dict:
         "link": job.get("link", ""),
         "easy_apply": bool(job.get("easy_apply")),
         "rating": job.get("score"),
+        "ctc": job.get("ctc") or "",
+        "callback": job.get("callback"),
         "why": job.get("reasoning")
         or job.get("why")
         or " | ".join(
