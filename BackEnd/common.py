@@ -1219,12 +1219,13 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             if not title or not company:
                 self._send_json({"error": "title and company are required"}, 400)
                 return
-            details = fetch_job_details(None, link)
-            try:
-                result = tailor_resume_pdf(role, title, company, details.get("description") or "")
-            except Exception as exc:
-                self._send_json({"error": str(exc)}, 400)
-                return
+            from orchestrator import enqueue_agent_job
+
+            result = enqueue_agent_job(
+                role,
+                "tailor_one",
+                {"title": title, "company": company, "link": link},
+            )
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/reassess":
@@ -1251,22 +1252,13 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             if not load_tailored_resume(company, title):
                 self._send_json({"error": "Tailor the resume for this job first."}, 400)
                 return
-            details = fetch_job_details(None, link)
-            try:
-                result = reassess_with_tailored_resume(
-                    role, title, company, details.get("description") or ""
-                )
-            except Exception as exc:
-                self._send_json({"error": str(exc)}, 400)
-                return
-            if result.get("ok"):
-                updated = update_ui_job_row(
-                    ROLE_META[role]["search"], title, company, link, result["row"]
-                )
-                if updated is None:
-                    self._send_json({"error": "Could not find this job in the table."}, 400)
-                    return
-                result["row"] = updated
+            from orchestrator import enqueue_agent_job
+
+            result = enqueue_agent_job(
+                role,
+                "reassess_one",
+                {"title": title, "company": company, "link": link},
+            )
             self._send_json(result, 200 if result.get("ok") else 400)
             return
         if parsed.path == "/api/chat":

@@ -30,6 +30,7 @@ let lastChatSignature = "";
 let lastAgentRunning = { em: false, tpm: false };
 let chatOpen = false;
 let chatTarget = "em";
+const pendingJobActions = {};
 let currentTimeRange = "week";
 let currentMaxPulls = 50;
 
@@ -90,9 +91,73 @@ function roleStatus(data, viewId) {
   return roleIsRunning(data, viewId) ? "Working…" : "Idle";
 }
 
+function jobActionKey(role, title, company, link, isReassess) {
+  return `${isReassess ? "reassess" : "tailor"}|${role}|${title || ""}|${company || ""}|${link || ""}`;
+}
+
+function pendingJobLabel(role, job, isReassess) {
+  const pending = pendingJobActions[jobActionKey(role, job.title, job.company, job.link, isReassess)];
+  if (!pending) {
+    return "";
+  }
+  return isReassess ? "Re-analyzing…" : "Tailoring…";
+}
+
+function settlePendingJobActions(data) {
+  const statusEl = document.getElementById("live-status");
+  for (const key of Object.keys(pendingJobActions)) {
+    const pending = pendingJobActions[key];
+    const view = VIEWS[pending.role];
+    if (!view) {
+      delete pendingJobActions[key];
+      continue;
+    }
+    const rows = (data.jobs && data.jobs[view.key]) || [];
+    const match = rows.find(
+      (job) =>
+        job.title === pending.title &&
+        job.company === pending.company &&
+        (!pending.link || !job.link || job.link === pending.link)
+    );
+    const stillBusy = roleIsRunning(data, pending.role);
+    const note = (match && match.note) || "";
+    const changed = Boolean(
+      match &&
+        (pending.isReassess
+          ? match.reassessed && note !== pending.note
+          : note !== pending.note)
+    );
+    if (changed) {
+      if (statusEl) {
+        statusEl.textContent = pending.isReassess
+          ? `Re-analyzed ${pending.title} with tailored resume`
+          : `Saved tailored resume for ${pending.title}`;
+        statusEl.classList.remove("error");
+        statusEl.classList.add("done");
+      }
+      delete pendingJobActions[key];
+      lastTableSignature = "";
+    } else if (!stillBusy) {
+      if (statusEl) {
+        statusEl.textContent = pending.isReassess
+          ? "Could not re-assess job."
+          : "Could not tailor resume.";
+        statusEl.classList.add("error");
+      }
+      delete pendingJobActions[key];
+      lastTableSignature = "";
+    }
+  }
+}
+
 function renderTable(jobs, running, emptyRun) {
   const root = document.getElementById("jobs-table");
-  const signature = JSON.stringify({ jobs, running, view: currentView });
+  const signature = JSON.stringify({
+    jobs,
+    running,
+    view: currentView,
+    pending: Object.keys(pendingJobActions),
+  });
   if (signature === lastTableSignature) {
     return;
   }
@@ -138,7 +203,8 @@ function renderTable(jobs, running, emptyRun) {
               data-title="${escapeHtml(job.title || "")}"
               data-company="${escapeHtml(job.company || "")}"
               data-link="${escapeHtml(job.link || "")}"
-            >Tailor resume</button>
+              ${pendingJobLabel(currentView, job, false) ? "disabled" : ""}
+            >${pendingJobLabel(currentView, job, false) || "Tailor resume"}</button>
           </td>
           <td class="col-reassess">
             <button
@@ -147,7 +213,8 @@ function renderTable(jobs, running, emptyRun) {
               data-title="${escapeHtml(job.title || "")}"
               data-company="${escapeHtml(job.company || "")}"
               data-link="${escapeHtml(job.link || "")}"
-            >Re-assess</button>
+              ${pendingJobLabel(currentView, job, true) ? "disabled" : ""}
+            >${pendingJobLabel(currentView, job, true) || "Re-assess"}</button>
             ${job.reassessed ? '<span class="reassessed-tag">Re-analyzed</span>' : ""}
           </td>
           <td class="col-why">${dash(job.why)}</td>
@@ -389,11 +456,11 @@ function selectedChatRoles() {
   if (chatTarget === "both") {
     return ["em", "tpm"];
   }
-  if (currentView === "em" || currentView === "tpm") {
-    return [currentView];
-  }
   if (chatTarget === "em" || chatTarget === "tpm") {
     return [chatTarget];
+  }
+  if (currentView === "em" || currentView === "tpm") {
+    return [currentView];
   }
   return ["em"];
 }
@@ -409,8 +476,8 @@ function syncChatSend() {
     return;
   }
   const idle = idleSelectedRoles();
-  send.disabled = idle.length === 0;
-  send.textContent = idle.length === 0 ? "Working…" : "Send";
+  send.disabled = selectedChatRoles().length === 0;
+  send.textContent = "Send";
   document.querySelectorAll("[data-chat-agent]").forEach((button) => {
     const role = button.dataset.chatAgent;
     const busy = role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
@@ -432,7 +499,7 @@ function syncChatSend() {
             ? `One agent is busy. Send will start ${idle[0].toUpperCase()} now.`
             : "Both agents are working.";
     } else if (idle.length === 0) {
-      subtitle.textContent = `${chatTarget.toUpperCase()} is working. Click TPM, EM, or Both to start the other.`;
+      subtitle.textContent = `${chatTarget.toUpperCase()} is working. Send a filter (skip too technical, ignore EM titles) and it applies to the rest of the run.`;
     } else {
       subtitle.textContent = `Talking to ${chatTarget.toUpperCase()}. Click Both to run EM and TPM together.`;
     }
@@ -492,7 +559,7 @@ async function sendChatMessage(text) {
       body: JSON.stringify({
         message: text,
         role: chatTarget,
-        roles: idleSelectedRoles(),
+        roles: selectedChatRoles(),
       }),
   });
   let payload = {};
@@ -544,9 +611,6 @@ function setView(viewId, updateHash) {
     lastTableSignature = "";
   }
   currentView = viewId;
-  if (viewId === "em" || viewId === "tpm") {
-    chatTarget = viewId;
-  }
   if (updateHash) {
     const hash = hashForView(viewId);
     if (window.location.hash !== hash) {
@@ -568,6 +632,7 @@ function viewFromHash() {
 
 function renderAll(payload) {
   latestData = normalizePayload(payload);
+  settlePendingJobActions(latestData);
   paintView();
   maybeFocusChatRole();
 }
@@ -698,12 +763,47 @@ document.getElementById("jobs-table").addEventListener("click", async (event) =>
   button.disabled = true;
   const original = button.textContent;
   button.textContent = isReassess ? "Re-analyzing…" : "Tailoring…";
+  const title = button.dataset.title || "";
+  const company = button.dataset.company || "";
+  const link = button.dataset.link || "";
+  const rows = latestData.jobs[VIEWS[currentView].key] || [];
+  const existing = rows.find(
+    (job) =>
+      job.title === title &&
+      job.company === company &&
+      (!link || !job.link || job.link === link)
+  );
+  const pendingKey = jobActionKey(currentView, title, company, link, isReassess);
+  pendingJobActions[pendingKey] = {
+    role: currentView,
+    title,
+    company,
+    link,
+    note: (existing && existing.note) || "",
+    isReassess,
+  };
+  lastTableSignature = "";
+  let queued = false;
   try {
     const payload = await postJobAction(isReassess ? "/api/reassess" : "/api/tailor", button);
-    if (isReassess && payload.row) {
+    if (payload.chat) {
+      latestData.chat = payload.chat;
+      lastChatSignature = "";
+      paintChat();
+    }
+    if (payload.queued) {
+      queued = true;
+      statusEl.textContent = isReassess
+        ? `Queued re-score for ${title}`
+        : `Queued tailor for ${title}`;
+      statusEl.classList.remove("error");
+      statusEl.classList.add("done");
+      paintView();
+    } else if (isReassess && payload.row) {
+      delete pendingJobActions[pendingKey];
       const key = VIEWS[currentView].key;
-      const rows = latestData.jobs[key] || [];
-      const match = rows.find(
+      const tableRows = latestData.jobs[key] || [];
+      const match = tableRows.find(
         (job) =>
           job.title === payload.row.title &&
           job.company === payload.row.company &&
@@ -716,18 +816,28 @@ document.getElementById("jobs-table").addEventListener("click", async (event) =>
       } else {
         pullLiveJobs();
       }
+      statusEl.textContent = `Re-analyzed ${title} with tailored resume`;
+      statusEl.classList.remove("error");
+      statusEl.classList.add("done");
+    } else {
+      delete pendingJobActions[pendingKey];
+      statusEl.textContent = isReassess
+        ? `Re-analyzed ${title} with tailored resume`
+        : `Saved tailored resume: ${payload.filename}`;
+      statusEl.classList.remove("error");
+      statusEl.classList.add("done");
     }
-    statusEl.textContent = isReassess
-      ? `Re-analyzed ${button.dataset.title} with tailored resume`
-      : `Saved tailored resume: ${payload.filename}`;
-    statusEl.classList.remove("error");
-    statusEl.classList.add("done");
   } catch (error) {
+    delete pendingJobActions[pendingKey];
     statusEl.textContent = error.message || (isReassess ? "Could not re-assess job." : "Could not tailor resume.");
     statusEl.classList.add("error");
   } finally {
-    button.disabled = false;
-    button.textContent = original;
+    if (!queued) {
+      button.disabled = false;
+      button.textContent = original;
+      lastTableSignature = "";
+      paintView();
+    }
   }
 });
 
@@ -797,7 +907,7 @@ document.getElementById("chat-form").addEventListener("submit", async (event) =>
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
   syncChatSend();
-  if (!text || idleSelectedRoles().length === 0) {
+  if (!text || selectedChatRoles().length === 0) {
     return;
   }
   setChatOpen(true);
