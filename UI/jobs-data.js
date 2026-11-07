@@ -1109,6 +1109,28 @@ window.JOB_DATA = {
   ],
   "Technical Program Manager": [
     {
+      "title": "Implementation Lead",
+      "company": "Uber",
+      "link": "https://in.linkedin.com/jobs/view/implementation-lead-at-uber-4488186829",
+      "easy_apply": false,
+      "rating": 94,
+      "why": "The candidate has demonstrated expertise in leading end-to-end program lifecycles, acting as a technical subject matter expert in pre-sales, and managing complex enterprise deployments for tier-1 clients. His cross-functional leadership and client-facing governance map directly to the requirements of managing large enterprise onboarding and integrations.",
+      "weak_vs_jd": "Direct experience in employee transportation services (ETS) domain, Managing APAC specific regional transit operations",
+      "note": "Highlight customer-facing program management, technical pre-sales alignment, and cross-functional enterprise rollouts. | Re-analyzed with tailored resume (Uber-Implementation_Lead.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Technical Success Manager- ANZ",
+      "company": "Zscaler",
+      "link": "https://in.linkedin.com/jobs/view/technical-success-manager-anz-at-zscaler-4469711341",
+      "easy_apply": false,
+      "rating": 94,
+      "why": "The candidate has over 8 years of experience managing complex technical lifecycles, acting as the primary technical liaison, and driving executive-level stakeholder engagement to ensure full solution realization and ROI. His background in security automation (CN-Shield) and enterprise platform deployment directly maps to Zscaler's ecosystem.",
+      "weak_vs_jd": "Formal Customer Success metrics or certifications, Dedicated ANZ regional market coverage experience",
+      "note": "Resume tailored to emphasize technical success, stakeholder relationship management, cross-functional program delivery, and enterprise security architecture. | Re-analyzed with tailored resume (Zscaler-Technical_Success_Manager-_ANZ.pdf)",
+      "reassessed": true
+    },
+    {
       "title": "AI Technical Consultant",
       "company": "Moolya",
       "link": "https://in.linkedin.com/jobs/view/ai-technical-consultant-at-moolya-4486957338",
@@ -1139,6 +1161,72 @@ window.JOB_DATA = {
       "why": "Arvin has direct experience managing the full lifecycle of complex, large-scale technical programs (n.Lift, n.Vision) involving AI/ML and cloud infrastructure. His background in leading cross-functional teams, managing stakeholders, and handling technical dependencies aligns perfectly with the JD. His experience with AI/ML platforms also positions him well for the 'AI Orchestration' requirement mentioned in the job description.",
       "weak_vs_jd": "Direct e-commerce/fashion industry experience",
       "note": "While his domain experience is in Energy/Industrial, his technical program management methodologies and experience with high-scale AI/ML platforms are highly transferable to Myntra's technology stack. | Re-analyzed with tailored resume (Myntra-Technical_Program_Manager.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Software OTA Product owner",
+      "company": "Aptiv",
+      "link": "https://in.linkedin.com/jobs/view/software-ota-product-owner-at-aptiv-4471666918",
+      "easy_apply": false,
+      "rating": 92,
+      "why": "Arvin's background in program governance, stakeholder management, cross-functional team synchronization, and cloud/platform delivery makes him an exceptional fit for driving complex software update and release programs.",
+      "weak_vs_jd": "Direct automotive SWDL/OTA domain experience, Embedded software vehicle platform flashing experience",
+      "note": "Experience is heavily concentrated in enterprise energy/industrial software rather than automotive, but program management and technical governance competencies are highly transferable. | Re-analyzed with tailored resume (Aptiv-Software_OTA_Product_owner.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Product Manager - Capture & Controls",
+      "company": "JPMorganChase",
+      "link": "https://in.linkedin.com/jobs/view/product-manager-capture-controls-at-jpmorganchase-4488146103",
+      "easy_apply": false,
+      "rating": 92,
+      "why": "Arvin's background encompasses leading end-to-end software and AI/ML program lifecycles, managing global multi-team agile environments, and translating business/control needs into scalable architectures. His experience with enterprise security automation, complex dependencies, and executive stakeholder alignment makes him an exceptional match for this technical program leadership role.",
+      "weak_vs_jd": "Direct financial services or banking domain experience, Formal PMP or product management certifications",
+      "note": "Resume tailored to emphasize technical program management, cross-functional agile delivery, AI/ML platform execution, and stakeholder communication. | Re-analyzed with tailored resume (JPMorganChase-Product_Manager_-_Capture_&_Controls.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "AVP, GFCD Technology, Analytics & Innovation (TAI)",
+      "company": "MUFG",
+      "link": "https://in.linkedin.com/jobs/view/avp-gfcd-technology-analytics-innovation-tai-at-mufg-4488125715",
+      "easy_apply": false,
+      "rating": 91,
+      "why": "Arvin's background directing machine learning analytics platforms, cloud infrastructure optimization, and end-to-end program lifecycles maps exceptionally well to managing technology solutions, analytics initiatives, and stakeholder alignment for enterprise banking compliance tech.",
+      "weak_vs_jd": "Direct Financial Crimes Compliance (GFCD) domain background, Formal PMP or Scrum Master certification",
+      "note": "Highlighted technical analytics delivery, cross-functional program governance, and stakeholder alignment to match MUFG's TAI initiative. | Re-analyzed with tailored resume (MUFG-AVP,_GFCD_Technology,_Analytics_&_Innovation_(TAI).pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "PM/PMO - Alternate Investment services Domain",
+      "company": "Capco",
+      "link": "https://in.linkedin.com/jobs/view/pm-pmo-alternate-investment-services-domain-at-capco-4488412498",
+      "easy_apply": false,
+      "rating": 90,
+      "why": "Arvin has extensive experience leading complex cross-functional software initiatives, enterprise stakeholder engagement, and process optimization. While his domain has been primarily energy and industrial platforms, his core program management rigor, resource planning, and governance capabilities are directly transferable to PMO consulting roles.",
+      "weak_vs_jd": "Alternative investment services domain experience, Formal PMP or Scrum certifications",
+      "note": "Tailored the summary and bullet highlights to emphasize technical program management, governance, and cross-functional coordination while keeping all 6 career history items intact. | Re-analyzed with tailored resume (Capco-PMPMO_-_Alternate_Investment_services_Domain.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "GoDigit - Lead - Enterprise Integration Solutions",
+      "company": "Go Digit General Insurance",
+      "link": "https://in.linkedin.com/jobs/view/godigit-lead-enterprise-integration-solutions-at-go-digit-general-insurance-4488459645",
+      "easy_apply": false,
+      "rating": 89,
+      "why": "The candidate's core background in software architecture, enterprise integrations, stakeholder management, and end-to-end program governance maps closely to the Lead - Enterprise Integration Solutions role at Go Digit.",
+      "weak_vs_jd": "Primary programming language background is C#/.NET rather than Python, Industry background is primarily energy/industrial rather than BFSI/Insurance",
+      "note": "Tailored to emphasize enterprise architecture, release readiness, cross-functional delivery leadership, and system modernization. | Re-analyzed with tailored resume (Go_Digit_General_Insurance-GoDigit_-_Lead_-_Enterprise_Integration_Solutions.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Functional Solution Manager",
+      "company": "Arcadis",
+      "link": "https://in.linkedin.com/jobs/view/functional-solution-manager-at-arcadis-4480322407",
+      "easy_apply": false,
+      "rating": 89,
+      "why": "The candidate has proven experience leading complex enterprise solution lifecycles, collaborating with global business units and vendors, and standardizing application delivery across multiple teams. His technical leadership at Nybl maps well to managing enterprise application domains and driving process efficiencies.",
+      "weak_vs_jd": "Specific hands-on Oracle ERP experience (though enterprise system background is strong), Formal ITIL or enterprise application maintenance certifications",
+      "note": "Resume tailored to emphasize enterprise solution management, cross-functional program governance, stakeholder collaboration, and global technical deployments. | Re-analyzed with tailored resume (Arcadis-Functional_Solution_Manager.pdf)",
       "reassessed": true
     },
     {
@@ -1208,6 +1296,127 @@ window.JOB_DATA = {
       "reassessed": true
     },
     {
+      "title": "Principal Data Systems Engineer",
+      "company": "Oracle",
+      "link": "https://in.linkedin.com/jobs/view/principal-data-systems-engineer-at-oracle-4486225853",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "While the candidate lacks specific Oracle Exadata/RDBMS hands-on experience mentioned in the 'Situation Management' section, their background as a Technical Program Lead managing complex, high-stakes enterprise deployments for tier-1 clients demonstrates the seniority and leadership required. They have proven expertise in managing schedules, resource allocation, and interdepartmental activities, which are the primary functions described in the JD.",
+      "weak_vs_jd": "Direct Oracle Exadata hands-on experience, Oracle RDBMS DBA specific expertise",
+      "note": "The candidate is an excellent fit for the Program/Product Management aspects of this role. Their technical depth in SQL and cloud infrastructure suggests they can quickly bridge the gap to the Oracle stack. | Re-analyzed with tailored resume (Oracle-Principal_Data_Systems_Engineer.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Cloud Automation Engineering Team Lead, VP",
+      "company": "Deutsche Bank",
+      "link": "https://in.linkedin.com/jobs/view/cloud-automation-engineering-team-lead-vp-at-deutsche-bank-4488416306",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "While the candidate's primary stack is C#/.NET rather than Java, their experience in cloud automation (GCP/Alibaba), Agile/Scrum leadership, and managing complex technical dependencies is highly transferable to a VMware/Cloud automation environment. They have demonstrated the ability to lead teams, manage stakeholders, and optimize cloud resources, which are the core pillars of the Deutsche Bank role.",
+      "weak_vs_jd": "Direct Java experience, VMware specific automation",
+      "note": "The candidate's seniority as a Technical Program Lead makes them a high-potential hire for a VP-level leadership position in cloud automation. | Re-analyzed with tailored resume (Deutsche_Bank-Cloud_Automation_Engineering_Team_Lead,_VP.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Technical Program Manager, Google Search Platforms",
+      "company": "Google",
+      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-google-search-platforms-at-google-4469714779",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "Arvin demonstrates the ability to lead complex, multi-disciplinary projects (n.Lift, n.Vision) and manage cross-functional dependencies. His experience bridging technical engineering with executive-level stakeholder management directly addresses the core responsibilities of the role. His hands-on background in backend infrastructure and cloud optimization (GCP/Alibaba) provides the technical depth required for Search Serving Infrastructure.",
+      "weak_vs_jd": "Formal PMP/CSM certification, Direct experience with Search Serving Infrastructure",
+      "note": "While the candidate's primary domain is Energy/Industrial, the underlying technical competencies in distributed systems, cloud scaling, and AI/ML are highly transferable to Google's infrastructure. | Re-analyzed with tailored resume (Google-Technical_Program_Manager,_Google_Search_Platforms.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "S&C Global Network - AI - CMT Engineering - Associate Manager",
+      "company": "Archer",
+      "link": "https://in.linkedin.com/jobs/view/s-c-global-network-ai-cmt-engineering-associate-manager-at-archer-4486969218",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "The candidate has direct experience directing the end-to-end program lifecycle for machine learning analytics platforms (n.Lift) and computer vision solutions (n.Vision). This maps directly to the job's requirements for AI architecture strategy, roadmap building, and managing technical dependencies. While the candidate's resume doesn't explicitly name 'Generative AI' projects, their deep expertise in AutoML, ML pipelines, and cloud-scale AI infrastructure provides the necessary technical foundation for the role.",
+      "weak_vs_jd": "Explicit Generative AI (GenAI) implementation experience, Formal consulting/advisory background",
+      "note": "The candidate's experience managing high-stakes deployments for tier-1 energy clients (BP, Exxon) demonstrates the maturity required for an Associate Manager level in a global network. | Re-analyzed with tailored resume (Archer-S&C_Global_Network_-_AI_-_CMT_Engineering_-_Associ.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Manager, Managed Services",
+      "company": "project44",
+      "link": "https://in.linkedin.com/jobs/view/manager-managed-services-at-project44-4485891965",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "Arvin has extensive experience in technical program leadership, specifically in delivering high-impact, automated, and predictive analytics platforms. His experience with real-time tracking (warehouse workflows) and managing complex technical dependencies across multi-team tracks aligns perfectly with the requirements of a Manager in a high-growth, AI-driven logistics environment. While his domain experience is in Energy/Industrial, the technical complexity and scale of his previous projects are highly transferable to supply chain visibility.",
+      "weak_vs_jd": "Direct Supply Chain/Logistics domain expertise",
+      "note": "The candidate's experience with 'real-time tracking' and 'automated forecasting' in his Software Engineer role at Nybl is a strong indicator of success in the logistics sector. | Re-analyzed with tailored resume (project44-Manager,_Managed_Services.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Senior Manager, GDO Analytics & Insights",
+      "company": "Takeda",
+      "link": "https://in.linkedin.com/jobs/view/senior-manager-gdo-analytics-insights-at-takeda-4477383607",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "His background in directing end-to-end program lifecycles for complex analytics platforms (n.Lift) and acting as a technical liaison for tier-1 enterprise clients demonstrates the stakeholder management and system ownership required for the BSO responsibilities. While his domain expertise is in Energy/Industrial rather than Clinical Trials, his functional mastery of SDLC, Agile, and technical roadmap execution is highly transferable.",
+      "weak_vs_jd": "Direct experience with clinical trial delivery systems, Pharmaceutical-specific regulatory/inspection readiness",
+      "note": "The candidate's experience with high-stakes industrial automation and enterprise-grade cloud platforms suggests he can quickly adapt to the rigorous compliance and inspection-facing requirements of the GDO environment. | Re-analyzed with tailored resume (Takeda-Senior_Manager,_GDO_Analytics_&_Insights.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Project Mgmt. Office (PMO)",
+      "company": "NTT DATA North America",
+      "link": "https://in.linkedin.com/jobs/view/project-mgmt-office-pmo-at-ntt-data-north-america-4488170815",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "While the candidate's background is more technical (TPM) than a traditional administrative PMO role, their experience managing end-to-end lifecycles, capacity planning, and executive stakeholder reporting for tier-1 clients makes them highly qualified for a technical PMO function. They demonstrate mastery over the core pillars of the JD: governance, resource tracking, and milestone management.",
+      "weak_vs_jd": "Explicit mention of RAID logs (though risk/dependency management is present), Specific mention of SharePoint/PowerPoint (though executive presentation experience is present), Formal PMO-specific administrative tasks like meeting minutes",
+      "note": "The candidate is likely overqualified for a junior PMO role but is an ideal fit for a PMO role within a high-growth technical or infrastructure transformation program. | Re-analyzed with tailored resume (NTT_DATA_North_America-Project_Mgmt._Office_(PMO).pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Solutions Builder (Strategic Builder)",
+      "company": "Salesforce",
+      "link": "https://in.linkedin.com/jobs/view/solutions-builder-strategic-builder-at-salesforce-4479794376",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "Arvin has led the delivery of complex AI/ML platforms (n.Lift, n.Vision) for global giants like BP and Exxon, demonstrating the ability to translate ambiguous business targets into scalable technical architectures. His experience in technical pre-sales and executive stakeholder management aligns perfectly with the 'customer-facing advisor' aspect of the role. While he lacks specific Salesforce ecosystem experience, his ability to drive measurable ROI and manage time-bound, high-impact deployments makes him an ideal candidate for a strategic deployment role.",
+      "weak_vs_jd": "Direct experience with Salesforce Agentforce or CRM platforms",
+      "note": "Focus the interview on his ability to adapt his industrial AI experience to a B2B SaaS/CRM context. | Re-analyzed with tailored resume (Salesforce-Solutions_Builder_(Strategic_Builder).pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Virtualisation Specialist",
+      "company": "OpseraCloud",
+      "link": "https://in.linkedin.com/jobs/view/virtualisation-specialist-at-opseracloud-4488194872",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "While his recent titles are more senior (Manager/Lead), his core competencies in managing end-to-end lifecycles, coordinating multi-team technical tracks, and translating business requirements into technical solutions match the JD's focus on client onboarding, project execution, and technical liaison work. He exceeds the 4+ years experience requirement and has deep expertise in cloud-native environments.",
+      "weak_vs_jd": "Direct mention of specific virtualization software tools, Explicit mention of standard ticketing systems (though uses Azure DevOps)",
+      "note": "Arvin may be overqualified for a 'Specialist' role, but his technical depth in cloud and program governance makes him an ideal candidate for high-stakes customer success and implementation. | Re-analyzed with tailored resume (OpseraCloud-Virtualisation_Specialist.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Customer Project Manager",
+      "company": "Philips",
+      "link": "https://in.linkedin.com/jobs/view/customer-project-manager-at-philips-4486991273",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "Arvin's experience with tier-1 clients like BP and Exxon mirrors the 'Customer Project Manager' requirement for managing external stakeholder expectations and ensuring deliverables meet customer needs. His background in technical pre-sales and program scoping directly maps to the JD's requirement for supporting presales and optimizing project plans. While he lacks medical device experience, his ability to manage complex technical integrations in industrial sectors is highly transferable.",
+      "weak_vs_jd": "Direct experience in the Medical Devices industry",
+      "note": "Strong functional match; domain gap is mitigated by the complexity of the enterprise platforms he has already delivered. | Re-analyzed with tailored resume (Philips-Customer_Project_Manager.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Project Manager \u2013 Digital Product ID Platform Migration",
+      "company": "Info Services",
+      "link": "https://in.linkedin.com/jobs/view/project-manager-%E2%80%93-digital-product-id-platform-migration-at-info-services-4486240367",
+      "easy_apply": false,
+      "rating": 88,
+      "why": "While his domain expertise is in AI/ML and industrial automation rather than Digital Product ID, his core competencies in managing complex technical dependencies, stakeholder coordination, and large-scale enterprise deployments are directly transferable. His experience in architectural migrations (e.g., refactoring core codebases) and managing multi-team backlogs aligns perfectly with the requirements for a platform migration project.",
+      "weak_vs_jd": "Direct experience with Digimarc or Scantrust, Specific domain knowledge of Digital Product Passports (DPP)",
+      "note": "His background in managing high-stakes deployments for tier-1 energy clients suggests he can handle the high-pressure environment of a global platform migration. | Re-analyzed with tailored resume (Info_Services-Project_Manager_\u2013_Digital_Product_ID_Platform_Migr.pdf)",
+      "reassessed": true
+    },
+    {
       "title": "AI Success Manager (US West Customer Hours)",
       "company": "Glean",
       "link": "https://in.linkedin.com/jobs/view/ai-success-manager-us-west-customer-hours-at-glean-4486947870",
@@ -1243,6 +1452,17 @@ window.JOB_DATA = {
       "reassessed": true
     },
     {
+      "title": "Senior Manager-CRM(SD)",
+      "company": "Ujjivan Small Finance Bank",
+      "link": "https://in.linkedin.com/jobs/view/senior-manager-crm-sd-at-ujjivan-small-finance-bank-4488169776",
+      "easy_apply": false,
+      "rating": 82,
+      "why": "While the candidate's industry experience is in Industrial/AI rather than Banking/CRM, their technical program management competencies are highly transferable. They have proven experience in managing end-to-end lifecycles, translating business requirements into technical roadmaps, and managing multi-team delivery\u2014all of which are central to the JD. Their experience with Agile, resource planning, and executive-level liaison directly addresses the 'Key Duties' of the role.",
+      "weak_vs_jd": "Direct Banking/CRM domain expertise, Experience with financial regulatory compliance frameworks",
+      "note": "The candidate is a strong technical leader. The interview should focus on their ability to adapt their requirement-gathering and solution-delivery skills to the specific regulatory and business context of a Small Finance Bank. | Re-analyzed with tailored resume (Ujjivan_Small_Finance_Bank-Senior_Manager-CRM(SD).pdf)",
+      "reassessed": true
+    },
+    {
       "title": "Assitant Director-BFSI Technology Program Manager",
       "company": "Acuity Analytics",
       "link": "https://in.linkedin.com/jobs/view/assitant-director-bfsi-technology-program-manager-at-acuity-analytics-4477382956",
@@ -1265,65 +1485,81 @@ window.JOB_DATA = {
       "reassessed": true
     },
     {
-      "title": "Senior Manager-CRM(SD)",
-      "company": "Ujjivan Small Finance Bank",
-      "link": "https://in.linkedin.com/jobs/view/senior-manager-crm-sd-at-ujjivan-small-finance-bank-4488169776",
-      "easy_apply": false,
-      "rating": 72,
-      "why": "The JD emphasizes requirement gathering, documenting solutions, managing timelines/costs, and improving scalability for client onboarding. Arvin's experience as a Technical Program Lead involves exactly these activities: translating ambiguous business targets into scalable architectures, managing end-to-end program lifecycles, and leading executive-level stakeholder presentations. His background in SQL and cloud infrastructure supports the technical assessment needs of the role.",
-      "weak_vs_jd": "CRM Domain Expertise, Banking/Financial Services Experience, Specific Client Onboarding Workflow Knowledge",
-      "note": "Focus the interview on his ability to adapt his enterprise delivery framework to the banking sector and his experience in mapping complex user journeys. | Re-analyzed with tailored resume (Ujjivan_Small_Finance_Bank-Senior_Manager-CRM(SD).pdf)",
-      "reassessed": true
-    },
-    {
       "title": "Manager \u2013 Data Governance & Protection Engineering",
       "company": "Kroll",
       "link": "https://in.linkedin.com/jobs/view/manager-%E2%80%93-data-governance-protection-engineering-at-kroll-4477722158",
       "easy_apply": false,
-      "rating": 72,
-      "why": "This role combines technical leadership, implementation oversight, and offshore team development across enterprise cybersecurity and data protection technologies. Arvin has successfully led cross-functional engineering teams, managed end-to-end platform deployments, and has hands-on experience in enterprise security automation. His experience scaling technical teams and interfacing with enterprise clients positions him well for this consulting engineering leadership position.",
-      "weak_vs_jd": "Dedicated Data Security Posture Management (DSPM) and Data Loss Prevention (DLP) tool specializations",
-      "note": "Emphasize your background in security automation and cross-functional engineering leadership."
-    },
-    {
-      "title": "Technical Manager-Instrumentation & Controls",
-      "company": "Quest Global",
-      "link": "https://in.linkedin.com/jobs/view/technical-manager-instrumentation-controls-at-quest-global-4486947936",
-      "easy_apply": false,
-      "rating": 72,
-      "why": "This role requires 15-20 years (though Arvin has 8 years of high-impact progressive experience) leading engineering teams, managing project cost/schedule constraints, and reviewing technical deliverables for industrial control systems. Arvin's core domain experience is heavily grounded in energy, oil & gas industrial platforms, and automation systems. His technical background in systems integration matches the industrial engineering requirements well.",
-      "weak_vs_jd": "Total years of experience is slightly below the 15-20 year preference, Hardware instrumentation and DCS/PLC hardware specifics",
-      "note": "Highlight your deep energy and industrial platform delivery track record to compensate for total years gap."
+      "rating": 78,
+      "why": "While the candidate does not explicitly list DSPM or DLP toolsets, their background in security infrastructure, data-driven analytics platforms, and managing cross-functional engineering tracks for global clients is highly transferable to a Data Governance & Protection Engineering Manager role. They have proven experience in scaling technical solutions and managing stakeholder relationships in complex environments.",
+      "weak_vs_jd": "Direct experience with DSPM/DLP specific technologies, Formal Data Privacy/Governance certifications, Specific Privacy Operations experience",
+      "note": "The candidate's strength lies in the 'Manager' and 'Technical Lead' aspects of the JD, particularly regarding global delivery and technical implementation oversight. | Re-analyzed with tailored resume (Kroll-Manager_\u2013_Data_Governance_&_Protection_Engineering.pdf)",
+      "reassessed": true
     },
     {
       "title": "Director of Product Engineering - Clinical Data Management / EDC",
       "company": "Fortrea",
       "link": "https://in.linkedin.com/jobs/view/director-of-product-engineering-clinical-data-management-edc-at-fortrea-4410072982",
       "easy_apply": false,
-      "rating": 72,
-      "why": "This role leads the strategy and development of data management software products supporting global clinical trials using Agile SAFe methodologies. Arvin has strong experience bridging technology and business, owning product life cycles from conception to launch, and delivering scalable data platforms. While his domain is industrial rather than life sciences, his engineering management and product leadership capabilities are highly transferable.",
-      "weak_vs_jd": "Clinical Data Management (EDC) life sciences industry domain experience",
-      "note": "Emphasize your end-to-end product engineering leadership and data platform architecture experience."
+      "rating": 78,
+      "why": "The candidate demonstrates high proficiency in bridging technical architecture with business strategy and managing cross-functional teams, which aligns with the Director of Product Engineering requirements. His experience managing the lifecycle of ML and computer vision platforms shows he can handle complex, data-heavy product environments. While he lacks direct clinical/life sciences domain experience, his ability to deliver scalable cloud platforms for tier-1 enterprise clients suggests high adaptability.",
+      "weak_vs_jd": "Direct Life Sciences/Clinical Data Management domain expertise, SAFe (Scaled Agile Framework) specific experience",
+      "note": "Candidate is a strong technical leader; domain adaptation for clinical data will be the primary focus during onboarding. | Re-analyzed with tailored resume (Fortrea-Director_of_Product_Engineering_-_Clinical_Data_Ma.pdf)",
+      "reassessed": true
     },
     {
-      "title": "Principal Data Systems Engineer",
-      "company": "Oracle",
-      "link": "https://in.linkedin.com/jobs/view/principal-data-systems-engineer-at-oracle-4486225853",
+      "title": "Delivery Project Lead",
+      "company": "Mphasis",
+      "link": "https://in.linkedin.com/jobs/view/delivery-project-lead-at-mphasis-4488137716",
       "easy_apply": false,
-      "rating": 72,
-      "why": "This is a senior individual contributor or technical leadership role focused on data systems engineering at Oracle. Arvin has robust experience building scalable data platforms, optimizing low-latency data pipelines, and working with SQL and cloud infrastructure. Without a full description, the balance between hands-on coding and system architecture is uncertain.",
-      "weak_vs_jd": "Detailed team leadership and program scope expectations",
-      "note": "Strong technical systems fit; check if the role is primarily engineering or program management."
+      "rating": 78,
+      "why": "Arvin brings robust cross-functional engineering management and cloud platform delivery experience, matching the program governance and coordination aspects of the role. While his core stack centers on C#, .NET, and computer vision rather than heavy Spark/Scala big data pipelines, his GCP proficiency and multi-team leadership background make him a viable candidate.",
+      "weak_vs_jd": "Extensive hands-on experience with Big Data specific tools (Databricks, Spark Streaming, Scala), 12+ years of total experience (candidate has 8+ years)",
+      "note": "Resume tailored to emphasize technical program management, cloud infrastructure delivery, and cross-functional team coordination. | Re-analyzed with tailored resume (Mphasis-Delivery_Project_Lead.pdf)",
+      "reassessed": true
     },
     {
-      "title": "Cloud Automation Engineering Team Lead, VP",
-      "company": "Deutsche Bank",
-      "link": "https://in.linkedin.com/jobs/view/cloud-automation-engineering-team-lead-vp-at-deutsche-bank-4488416306",
+      "title": "Package Consultant-ServiceNow",
+      "company": "IBM",
+      "link": "https://in.linkedin.com/jobs/view/package-consultant-servicenow-at-ibm-4477095452",
+      "easy_apply": false,
+      "rating": 78,
+      "why": "Arvin's background in leading enterprise software implementation lifecycles, managing client requirements, and optimizing operational workflows provides a strong foundation for consulting and implementation leadership.",
+      "weak_vs_jd": "ServiceNow specific certification, IT Service Management (ITSM) platform configuration",
+      "note": "While domain experience is in industrial AI/CV rather than ServiceNow, the program management, workflow design, and client-facing implementation competencies strongly transfer. | Re-analyzed with tailored resume (IBM-Package_Consultant-ServiceNow.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "AM-Client IT FIX Onboarding Protocol - Exchange listed derivatives",
+      "company": "BNP Paribas",
+      "link": "https://in.linkedin.com/jobs/view/am-client-it-fix-onboarding-protocol-exchange-listed-derivatives-at-bnp-paribas-4488124849",
+      "easy_apply": false,
+      "rating": 78,
+      "why": "While the domain is energy/industrial rather than financial derivatives, Arvin's extensive track record in managing client-facing IT integration pipelines, driving technical requirements-to-execution workflows, and coordinating global release cycles maps well to complex technical onboarding.",
+      "weak_vs_jd": "Direct Financial FIX protocol experience, Derivatives trading connectivity background, Level-2 production support background in capital markets",
+      "note": "Resume tailored strongly toward technical program governance, client-facing system integration, and end-to-end IT deployment workflows. | Re-analyzed with tailored resume (BNP_Paribas-AM-Client_IT_FIX_Onboarding_Protocol_-_Exchange_li.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "IValua \u2013 Senior Consultant, Technical Transformation",
+      "company": "Deloitte",
+      "link": "https://in.linkedin.com/jobs/view/ivalua-%E2%80%93-senior-consultant-technical-transformation-at-deloitte-4432699633",
       "easy_apply": false,
       "rating": 72,
-      "why": "This VP-level role leads a cloud automation engineering team, driving infrastructure optimization and cloud scaling. Arvin has hands-on cloud infrastructure cost-optimization experience on GCP and Alibaba Cloud, alongside strong team leadership and engineering management skills. While Deutsche Bank is in financial services, the core cloud automation and engineering leadership scope is highly relevant.",
-      "weak_vs_jd": "Banking sector cloud compliance and financial infrastructure background",
-      "note": "Strong technical leadership fit, provided your cloud background scales to banking security requirements."
+      "why": "Arvin has demonstrated the ability to translate ambiguous business targets into scalable architectures and manage the full delivery lifecycle, which is the core of the Deloitte role. His experience with complex integrations (CN-Shield) and enterprise-scale deployments (BP, Exxon) proves he can handle the scale and complexity required for digital procurement transformations.",
+      "weak_vs_jd": "IValua platform expertise, Source-to-pay / Procurement domain knowledge, Experience with SAP or Oracle ERP integrations",
+      "note": "Focus the interview on his ability to quickly master new enterprise platforms and his methodology for business process discovery and mapping. | Re-analyzed with tailored resume (Deloitte-IValua_\u2013_Senior_Consultant,_Technical_Transformati.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "GSF Process Owner - IM Digital Reporting",
+      "company": "Johnson & Johnson",
+      "link": "https://in.linkedin.com/jobs/view/gsf-process-owner-im-digital-reporting-at-johnson-johnson-4488184932",
+      "easy_apply": false,
+      "rating": 72,
+      "why": "The candidate has a strong match for the 'Digital Reporting' and 'Process Owner' aspects of the role. He has managed complex technical dependencies, led multi-team tracks, and delivered reporting tools for tier-1 enterprises. The gap is the lack of specific Finance/Accounting domain knowledge, but his TPM skills are highly transferable to a process ownership role.",
+      "weak_vs_jd": "Direct Finance/Accounting domain experience, Specific GSF (Global Service Framework) knowledge",
+      "note": "Focus interview questions on how he would apply his technical program management framework to financial reporting processes. | Re-analyzed with tailored resume (Johnson_&_Johnson-GSF_Process_Owner_-_IM_Digital_Reporting.pdf)",
+      "reassessed": true
     },
     {
       "title": "Senior Software Engineering Manager, Product Security",
@@ -1333,157 +1569,18 @@ window.JOB_DATA = {
       "rating": 70,
       "why": "The title indicates a senior engineering management position focused on product security. Arvin has successfully led software engineering teams, managed complex platform lifecycles, and built enterprise security automation tools like CN-Shield. While lacking a full description, the title and seniority match his profile well.",
       "weak_vs_jd": "Specific enterprise product security organizational context",
-      "note": "Strong title match; verify specific product security architecture requirements."
-    },
-    {
-      "title": "S&C Global Network - AI - CMT Engineering - Associate Manager",
-      "company": "Archer",
-      "link": "https://in.linkedin.com/jobs/view/s-c-global-network-ai-cmt-engineering-associate-manager-at-archer-4486969218",
-      "easy_apply": false,
-      "rating": 70,
-      "why": "This role sits within Accenture's/Archer's AI and CMT engineering consulting network. Arvin has hands-on experience building AI/ML analytics platforms, computer vision pipelines, and leading cross-functional engineering teams. Without a full description, the exact consulting delivery model requires clarification, but the core technical themes match well.",
-      "weak_vs_jd": "Specific consulting framework and enterprise IT advisory experience",
-      "note": "Good technical match for an AI engineering delivery role."
-    },
-    {
-      "title": "Technical Program Manager, Google Search Platforms",
-      "company": "Google",
-      "link": "https://in.linkedin.com/jobs/view/technical-program-manager-google-search-platforms-at-google-4469714779",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Google Search Platforms seeks a Technical Program Manager with 8+ years of experience leading distributed infrastructure initiatives and reducing latency. Arvin matches this through his work optimizing low-latency computer vision pipelines under 100ms using C# and C++. However, his background is concentrated in industrial/energy domains rather than hyperscale consumer search engines, which represents a slight domain translation hurdle. His experience with AI/ML integration and high-performance computing bridges the technical gap well.",
-      "weak_vs_jd": "Hyperscale consumer web infrastructure background, Master's degree in Computer Science",
-      "note": "Emphasize high-throughput distributed system management over specific search engine experience during interviews."
-    },
-    {
-      "title": "Implementation Lead",
-      "company": "Uber",
-      "link": "https://in.linkedin.com/jobs/view/implementation-lead-at-uber-4488186829",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Uber needs an implementation lead to act as the primary technical subject matter expert during sales cycles, own RFPs, lead UAT, and manage end-to-end client onboarding. Arvin has direct experience in technical pre-sales alignment, program scoping, and delivering enterprise solutions for tier-1 clients like BP and Exxon. While Uber's space is transportation logistics rather than heavy industrial AI, the client-facing technical program execution mechanics are identical.",
-      "weak_vs_jd": "Transportation and employee transit operations domain experience",
-      "note": "Highlight your enterprise client management and pre-sales scoping experience to demonstrate strong customer-facing capability."
-    },
-    {
-      "title": "Software OTA Product owner",
-      "company": "Aptiv",
-      "link": "https://in.linkedin.com/jobs/view/software-ota-product-owner-at-aptiv-4471666918",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Aptiv requires a Software Product Owner for Software Download (SWDL) and Over-the-Air (OTA) platforms, balancing embedded software, cybersecurity, and vehicle stakeholders. Arvin has hands-on experience optimizing high-performance C# with C++ integration layers and managing complex platform roadmaps. While he lacks automotive embedded experience, his systems-level performance engineering background is highly relevant.",
-      "weak_vs_jd": "Automotive embedded software and OTA protocol domain experience, Functional safety standards (ISO 26262)",
-      "note": "Highlight low-latency systems integration and firmware/software update lifecycle management."
-    },
-    {
-      "title": "Delivery Project Lead",
-      "company": "Mphasis",
-      "link": "https://in.linkedin.com/jobs/view/delivery-project-lead-at-mphasis-4488137716",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Mphasis is a major IT services firm hiring for a Delivery Project Lead. Arvin's 8 years of progressive experience spanning software engineering management, program governance, and client delivery make him a plausible match for IT service delivery roles. Without specific job details, however, the exact technical and domain fit cannot be verified.",
-      "weak_vs_jd": "Specific technical stack or domain requirements for this listing",
-      "note": "Standard IT services delivery role; verify specific client account requirements."
-    },
-    {
-      "title": "Manager, Managed Services",
-      "company": "project44",
-      "link": "https://in.linkedin.com/jobs/view/manager-managed-services-at-project44-4485891965",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "This role blends strategic thinking, data analysis, and proactive project management to ensure world-class delivery across diverse customer portfolios. Arvin has strong experience managing client deliverables, optimizing platform operations, and leveraging AI tools in daily workflows. However, his core background is rooted in industrial energy platforms and computer vision rather than supply chain logistics.",
-      "weak_vs_jd": "Supply chain and logistics industry domain knowledge",
-      "note": "Align your operational optimization and client delivery management background with their managed services model."
+      "note": "Strong title match; verify specific product security architecture requirements. | Skipped: title is an Engineering Manager role, not TPM"
     },
     {
       "title": "Associate-Carbon & Net Zero",
       "company": "WSP in India",
       "link": "https://in.linkedin.com/jobs/view/associate-carbon-net-zero-at-wsp-in-india-4470302972",
       "easy_apply": false,
-      "rating": 68,
-      "why": "This role requires leading a Carbon and Net Zero discipline team, managing project delivery, and providing technical guidance in organizational GHG accounting and decarbonisation strategies. Arvin has strong team leadership, resource planning, and domain experience in energy and industrial sectors. However, his core technical expertise is in software engineering, AI, and cloud platforms rather than carbon management consulting.",
-      "weak_vs_jd": "Greenhouse gas (GHG) accounting and corporate carbon footprint assessment expertise",
-      "note": "Best suited for technology and automation tracks within sustainability rather than pure carbon accounting consulting."
-    },
-    {
-      "title": "Project Mgmt. Office (PMO)",
-      "company": "NTT DATA North America",
-      "link": "https://in.linkedin.com/jobs/view/project-mgmt-office-pmo-at-ntt-data-north-america-4488170815",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "This PMO position at a major IT services firm requires structured program governance and delivery oversight. Arvin has extensive experience governing end-to-end program lifecycles, managing resources, and tracking delivery metrics. Without specific job details, it is difficult to determine if it leans too administrative or matches his technical program leadership level.",
-      "weak_vs_jd": "Specific PMO methodology and tool requirements",
-      "note": "Standard PMO role; ensure it emphasizes technical program management rather than pure administrative reporting."
-    },
-    {
-      "title": "Product Manager - Capture & Controls",
-      "company": "JPMorganChase",
-      "link": "https://in.linkedin.com/jobs/view/product-manager-capture-controls-at-jpmorganchase-4488146103",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "JPMorgan is hiring a Product Manager for Capture & Controls within banking technology. Arvin has strong experience leading end-to-end platform lifecycles and bridging technical architecture with business targets. Without specific description details, exact domain and tech stack compatibility remain unconfirmed.",
-      "weak_vs_jd": "Banking capture and controls domain experience",
-      "note": "Investigate specific product scope within JPMorgan's technology group."
-    },
-    {
-      "title": "GoDigit - Lead - Enterprise Integration Solutions",
-      "company": "Go Digit General Insurance",
-      "link": "https://in.linkedin.com/jobs/view/godigit-lead-enterprise-integration-solutions-at-go-digit-general-insurance-4488459645",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Go Digit is seeking a lead for enterprise integration solutions. Arvin has strong backend experience in C#, .NET, NATS message queues, and API integration architectures across complex enterprise platforms. Without a full job description, however, the exact scope, team size, and insurance domain requirements cannot be fully confirmed.",
-      "weak_vs_jd": "Insurance domain industry experience",
-      "note": "Good technical alignment; verify specific integration platform requirements."
-    },
-    {
-      "title": "Technical Success Manager- ANZ",
-      "company": "Zscaler",
-      "link": "https://in.linkedin.com/jobs/view/technical-success-manager-anz-at-zscaler-4469711341",
-      "easy_apply": false,
-      "rating": 68,
-      "why": "Zscaler hires TSMs to ensure customer success, technical adoption, and security solution implementation in the ANZ region. Arvin has strong experience in enterprise security automation (CN-Shield) and client-facing technical pre-sales alignment. Without a full description, the exact regional coverage and support model remain unconfirmed.",
-      "weak_vs_jd": "Dedicated post-sales technical success management in cybersecurity SaaS",
-      "note": "Good cybersecurity and client alignment; verify regional hours and scope."
-    },
-    {
-      "title": "Solutions Builder (Strategic Builder)",
-      "company": "Salesforce",
-      "link": "https://in.linkedin.com/jobs/view/solutions-builder-strategic-builder-at-salesforce-4479794376",
-      "easy_apply": false,
       "rating": 65,
-      "why": "The role requires full lifecycle ownership of customer-facing AI deployments, workshops, and agentic solution architecture. Arvin brings solid technical pre-sales alignment, client-facing delivery for tier-1 energy clients, and AI platform experience. However, his background is anchored in industrial AI, computer vision, and C# cloud platforms rather than Salesforce ecosystems.",
-      "weak_vs_jd": "Salesforce platform and CRM ecosystem expertise, Forward deployed consulting model experience",
-      "note": "Position your technical pre-sales and enterprise client delivery experience as transferable consulting strength."
-    },
-    {
-      "title": "Senior Manager, GDO Analytics & Insights",
-      "company": "Takeda",
-      "link": "https://in.linkedin.com/jobs/view/senior-manager-gdo-analytics-insights-at-takeda-4477383607",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "Takeda is seeking a Senior Manager to serve as Business System Owner (BSO) for clinical trial delivery systems and drive roadmap prioritization with technology partners. Arvin has served in similar capacities managing complex enterprise software platforms and aligning engineering roadmaps with business targets. His industrial domain experience requires adaptation to clinical trial regulations and life sciences workflows.",
-      "weak_vs_jd": "Clinical trial delivery systems and life sciences regulatory background",
-      "note": "Highlight your experience acting as a primary system owner and bridging product roadmaps with technical teams."
-    },
-    {
-      "title": "Salesforce Implementation Lead",
-      "company": "MaxVal Group, Inc.",
-      "link": "https://in.linkedin.com/jobs/view/salesforce-implementation-lead-at-maxval-group-inc-4488116799",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "The role calls for 9-12 years of experience leading full lifecycle Salesforce implementations, vendor coordination, and team mentoring. Arvin has solid Agile project delivery practices, cross-functional leadership, and 8 years of total technical experience. However, he lacks the mandatory Salesforce Administrator certification and core CRM platform architecture background.",
-      "weak_vs_jd": "Salesforce Administrator certification, Deep Salesforce platform architecture experience",
-      "note": "Only apply if open to shifting your platform focus entirely to the Salesforce ecosystem."
-    },
-    {
-      "title": "Functional Solution Manager",
-      "company": "Arcadis",
-      "link": "https://in.linkedin.com/jobs/view/functional-solution-manager-at-arcadis-4480322407",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "This role leads functional changes within enterprise applications portfolios, conducts POCs, and collaborates with product owners and vendors. Arvin has strong experience managing platform solutions, coordinating vendors, and aligning technical roadmaps. However, his background is in custom software and cloud AI platforms rather than enterprise corporate applications.",
-      "weak_vs_jd": "Enterprise application portfolio management (Oracle/SAP), Functional design review for corporate ERP systems",
-      "note": "More oriented towards enterprise ERP application support than custom software engineering leadership."
+      "why": "While the candidate does not have a background in Carbon/Net Zero science, their experience managing complex technical programs for global energy giants (BP, Exxon, ADNOC) and their expertise in resource planning, capacity management, and stakeholder engagement makes them a highly capable technical leader who could manage the delivery of sustainability-focused technical solutions.",
+      "weak_vs_jd": "Direct Carbon and Net Zero discipline expertise, Sustainability Advisory background, Environmental science domain knowledge",
+      "note": "Focus on the candidate's ability to lead the technical execution and digital transformation aspects of decarbonization initiatives within the energy sector. | Re-analyzed with tailored resume (WSP_in_India-Associate-Carbon_&_Net_Zero.pdf)",
+      "reassessed": true
     },
     {
       "title": "Business Systems Analyst",
@@ -1491,59 +1588,10 @@ window.JOB_DATA = {
       "link": "https://in.linkedin.com/jobs/view/business-systems-analyst-at-netapp-4486292382",
       "easy_apply": false,
       "rating": 65,
-      "why": "NetApp seeks a Business Systems Analyst to bridge business needs with IT solutions. Arvin has strong experience gathering requirements, managing software lifecycles, and bridging engineering execution with business targets. Without a full description, the specific enterprise application stack (e.g., Salesforce, SAP, Oracle) remains unknown.",
-      "weak_vs_jd": "Specific enterprise systems portfolio familiarity",
-      "note": "Verify internal IT application focus before committing."
-    },
-    {
-      "title": "Virtualisation Specialist",
-      "company": "OpseraCloud",
-      "link": "https://in.linkedin.com/jobs/view/virtualisation-specialist-at-opseracloud-4488194872",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "OpseraCloud is hiring a virtualization specialist for cloud environments. Arvin has hands-on cloud infrastructure optimization experience on GCP and Alibaba Cloud. Without a job description, it is difficult to assess whether this is an individual contributor technical role or a leadership position matching his current level.",
-      "weak_vs_jd": "Detailed role scope and management expectations",
-      "note": "Verify whether the role is hands-on engineering or technical leadership."
-    },
-    {
-      "title": "IValua \u2013 Senior Consultant, Technical Transformation",
-      "company": "Deloitte",
-      "link": "https://in.linkedin.com/jobs/view/ivalua-%E2%80%93-senior-consultant-technical-transformation-at-deloitte-4432699633",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "This role supports digital procurement transformations and Ivalua module configurations across client environments. Arvin brings solid technical consulting delivery, requirements gathering, and system integration background. However, he lacks experience with the Ivalua procurement platform and source-to-pay enterprise workflows.",
-      "weak_vs_jd": "Ivalua platform configuration expertise, Source-to-pay procurement domain background",
-      "note": "Best suited for general technical implementation tracks rather than specific procurement software consulting."
-    },
-    {
-      "title": "Package Consultant-ServiceNow",
-      "company": "IBM",
-      "link": "https://in.linkedin.com/jobs/view/package-consultant-servicenow-at-ibm-4477095452",
-      "easy_apply": false,
-      "rating": 65,
-      "why": "This role delivers advisory and implementation services across ServiceNow capabilities, focusing on workflow design, integrations, and deployment delivery. Arvin has strong experience configuring enterprise solutions, managing implementations, and driving process improvements. However, his technical stack is built on .NET, GCP, and custom software rather than the ServiceNow platform.",
-      "weak_vs_jd": "ServiceNow platform configuration and administration experience",
-      "note": "Skip unless pivoting into ServiceNow platform consulting."
-    },
-    {
-      "title": "AVP, GFCD Technology, Analytics & Innovation (TAI)",
-      "company": "MUFG",
-      "link": "https://in.linkedin.com/jobs/view/avp-gfcd-technology-analytics-innovation-tai-at-mufg-4488125715",
-      "easy_apply": false,
-      "rating": 64,
-      "why": "MUFG is seeking an AVP to deliver technology solutions supporting financial crimes, transaction monitoring, and compliance programs. Arvin offers robust technical program leadership, vendor coordination, and enterprise software delivery experience. His primary domain, however, is energy, industrial automation, and computer vision rather than banking compliance.",
-      "weak_vs_jd": "Financial crimes, AML, and compliance domain knowledge, Banking sector technology architecture experience",
-      "note": "A solid general technical management fit, but requires domain adaptation into banking compliance."
-    },
-    {
-      "title": "AM-Client IT FIX Onboarding Protocol - Exchange listed derivatives",
-      "company": "BNP Paribas",
-      "link": "https://in.linkedin.com/jobs/view/am-client-it-fix-onboarding-protocol-exchange-listed-derivatives-at-bnp-paribas-4488124849",
-      "easy_apply": false,
-      "rating": 64,
-      "why": "This role manages end-to-end client onboarding for electronic trading via the FIX protocol, requiring infrastructure coordination and low-latency awareness. Arvin brings excellent client-facing technical onboarding experience, low-latency performance optimization background, and strong stakeholder management. However, financial markets FIX protocol connectivity is a niche financial technology domain.",
-      "weak_vs_jd": "FIX protocol and electronic trading derivatives domain knowledge",
-      "note": "Strong technical coordination skills, but requires a pivot into financial market connectivity protocols."
+      "why": "Arvin demonstrates strong capabilities in stakeholder management, process improvement, and system architecture. He has a proven track record of translating ambiguous business targets into scalable technical solutions, which is a core requirement for this BSA role. However, the job's heavy focus on Finance, Treasury, and Oracle ERP is a domain gap for the candidate, whose experience is primarily in AI/ML and Industrial Automation.",
+      "weak_vs_jd": "Oracle Cloud ERP expertise, Finance, Treasury, and Analytics domain knowledge",
+      "note": "Overqualified in terms of management level, but a strong fit for the analytical and system-design aspects of the role. | Re-analyzed with tailored resume (NetApp-Business_Systems_Analyst.pdf)",
+      "reassessed": true
     },
     {
       "title": "Senior Project Manager (Salesforce Exp Mandatory)",
@@ -1554,46 +1602,6 @@ window.JOB_DATA = {
       "why": "The position demands multi-cloud enterprise Salesforce implementations using Agile and SAFe frameworks, combined with executive stakeholder management. Arvin offers robust engineering management, cross-functional program leadership, and modern AI tool integration. However, he lacks the mandatory enterprise Salesforce delivery background specified for the role.",
       "weak_vs_jd": "Enterprise multi-cloud Salesforce implementation experience, SAFe framework certifications",
       "note": "Only apply if open to intensive upskilling on the Salesforce ecosystem."
-    },
-    {
-      "title": "PM/PMO - Alternate Investment services Domain",
-      "company": "Capco",
-      "link": "https://in.linkedin.com/jobs/view/pm-pmo-alternate-investment-services-domain-at-capco-4488412498",
-      "easy_apply": false,
-      "rating": 62,
-      "why": "Capco is looking for a PM/PMO consultant to support alternative investment services strategic transformations and change initiatives. Arvin brings strong project discipline, analytical thinking, and cross-functional stakeholder coordination from his software leadership background. However, the role strictly requires knowledge of private equity accounting, capital calls, and fund operations.",
-      "weak_vs_jd": "Alternative investment services and private equity fund operations domain knowledge",
-      "note": "Best suited for general technical PM roles rather than specialized financial asset management PMO positions."
-    },
-    {
-      "title": "Customer Project Manager",
-      "company": "Philips",
-      "link": "https://in.linkedin.com/jobs/view/customer-project-manager-at-philips-4486991273",
-      "easy_apply": false,
-      "rating": 62,
-      "why": "Philips hires customer project managers to oversee medical technology implementations and client deliverables. Arvin brings strong client-facing delivery experience for tier-1 enterprises and rigorous program governance. Without a detailed description, however, the medical device or healthcare IT domain alignment cannot be verified.",
-      "weak_vs_jd": "Healthcare and medical device domain experience",
-      "note": "Verify healthcare sector focus before applying."
-    },
-    {
-      "title": "GSF Process Owner - IM Digital Reporting",
-      "company": "Johnson & Johnson",
-      "link": "https://in.linkedin.com/jobs/view/gsf-process-owner-im-digital-reporting-at-johnson-johnson-4488184932",
-      "easy_apply": false,
-      "rating": 62,
-      "why": "This role drives standardized end-to-end processes and digital reporting within J&J Global Services finance organization. Arvin has strong process standardization and cross-functional program management skills. However, the role is heavily anchored in corporate finance accounting operations rather than advanced software engineering or AI platform development.",
-      "weak_vs_jd": "Corporate finance accounting operations and global shared services domain background",
-      "note": "More aligned with finance operations leadership than technical software engineering management."
-    },
-    {
-      "title": "Project Manager \u2013 Digital Product ID Platform Migration",
-      "company": "Info Services",
-      "link": "https://in.linkedin.com/jobs/view/project-manager-%E2%80%93-digital-product-id-platform-migration-at-info-services-4486240367",
-      "easy_apply": false,
-      "rating": 60,
-      "why": "This project manager role involves migrating a Digital Product ID platform from Digimarc to Scantrust, requiring vendor management, API integration coordination, and data migration. Arvin has successfully managed end-to-end program lifecycles and complex system deployments. However, his core expertise is concentrated in industrial AI and cloud platforms rather than retail product authentication systems.",
-      "weak_vs_jd": "Digital Product ID or supply chain tracing domain experience, Digimarc/Scantrust platform familiarity",
-      "note": "Highlight general technical migration and vendor management experience if pursuing."
     },
     {
       "title": "Data Solutions - Senior Manager",
@@ -1784,6 +1792,28 @@ window.JOB_DATA = {
       "why": "Applied Materials listing provides no description. Semiconductor equipment product line management requires specialized hardware manufacturing background.",
       "weak_vs_jd": "Semiconductor equipment manufacturing, Job description",
       "note": "No job description available."
+    },
+    {
+      "title": "Salesforce Implementation Lead",
+      "company": "MaxVal Group, Inc.",
+      "link": "https://in.linkedin.com/jobs/view/salesforce-implementation-lead-at-maxval-group-inc-4488116799",
+      "easy_apply": false,
+      "rating": 45,
+      "why": "The job description explicitly requires 9-12 years of experience as a Salesforce Administrator or Consultant and a Salesforce Admin Certification. The candidate has 8 years of experience in software engineering and technical program leadership, but no documented experience with the Salesforce platform or its specific implementation methodologies.",
+      "weak_vs_jd": "Salesforce Administration, Salesforce Certification, 9-12 years of Salesforce-specific experience, Salesforce implementation expertise",
+      "note": "The candidate's profile is excellent for a general Technical Program Manager role in cloud or AI/ML domains, but does not meet the specialized CRM requirements of this position. | Re-analyzed with tailored resume (MaxVal_Group,_Inc-Salesforce_Implementation_Lead.pdf)",
+      "reassessed": true
+    },
+    {
+      "title": "Technical Manager-Instrumentation & Controls",
+      "company": "Quest Global",
+      "link": "https://in.linkedin.com/jobs/view/technical-manager-instrumentation-controls-at-quest-global-4486947936",
+      "easy_apply": false,
+      "rating": 45,
+      "why": "While Arvin has delivered software platforms for tier-1 energy clients like BP and Exxon and understands industrial automation from a software perspective (n.VFM, n.Lift), he lacks the specific electrical and instrumentation engineering background, knowledge of hazardous area classifications, and familiarity with ISA/IEC/ASME standards required for this specific techno-managerial role.",
+      "weak_vs_jd": "Expertise in DCS, ESD, SIS, SSD, and PLCs, Knowledge of Hazardous Area Classifications (ATEX, IP ratings), Familiarity with global standards like ISA, IEC, ASME, CE, Experience in Field Instrumentation and Fire and Gas detection systems, 15-20 years of project engineering experience (Candidate has 8)",
+      "note": "Strong candidate for a Software TPM role in the energy sector, but under-qualified for a hardware-centric Instrumentation & Controls management position. | Re-analyzed with tailored resume (Quest_Global-Technical_Manager-Instrumentation_&_Controls.pdf)",
+      "reassessed": true
     }
   ]
 };

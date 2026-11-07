@@ -6,7 +6,9 @@ import json
 import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from queue import Empty, Queue
 
 from llm import complete_json, llm_available
 
@@ -747,6 +749,8 @@ AGENT_MAX_MINUTES = 20
 AGENT_MAX_LLM_FAILS = 3
 AGENT_EARLY_STOP_HIGH = 10
 AGENT_EARLY_STOP_SCORE = 90
+AGENT_MAX_POOL_WORKERS = 6
+AGENT_JOBS_PER_WORKER = 8
 
 DECIDE_SYSTEM = """You are one Bengaluru job-hunt agent (EM or TPM). You only work that agent's table.
 Each turn you observe live state and pick the next tool. You are not locked to a script.
@@ -888,6 +892,130 @@ def _rule_next(role_id: str, plan: dict, state: dict) -> dict:
     return {"tool": "stop", "args": {"reason": "all selected jobs done"}}
 
 
+def _pool_workers(batch_size: int) -> int:
+    n = max(0, int(batch_size or 0))
+    if n <= 1:
+        return 1
+    return min(AGENT_MAX_POOL_WORKERS, max(2, (n + AGENT_JOBS_PER_WORKER - 1) // AGENT_JOBS_PER_WORKER))
+
+
+def _pending_jobs(role_id: str, plan: dict, state: dict, tool: str) -> list[dict]:
+    from resume_tailor import load_tailored_resume
+
+    skipped = state.get("skipped") or set()
+    max_tailors = min(int(plan.get("top_n") or AGENT_MAX_TAILORS), AGENT_MAX_TAILORS)
+    already = int(state.get("tailored") or 0)
+    pending: list[dict] = []
+    for job in state.get("fits") or []:
+        key = _job_key(job)
+        if key in skipped or job.get("_skip") or not key[0] or not key[1]:
+            continue
+        has_pdf = load_tailored_resume(job.get("company"), job.get("title"))
+        if tool == "tailor_one":
+            if not plan.get("tailor") or has_pdf:
+                continue
+            if already + len(pending) >= max_tailors:
+                continue
+            pending.append(job)
+        elif tool == "reassess_one":
+            if not plan.get("reassess") or not has_pdf or job.get("reassessed"):
+                continue
+            pending.append(job)
+    return pending
+
+
+def _announce_job_outcome(role_id: str, label: str, outcome: dict) -> None:
+    tool = outcome.get("tool")
+    title = str(outcome.get("title") or "")
+    company = str(outcome.get("company") or "")
+    if not outcome.get("ok"):
+        _append("assistant", f"{label}: {outcome.get('error') or f'{tool} failed'}", role_id)
+        return
+    if outcome.get("skip"):
+        _append(
+            "assistant",
+            f"{label}: skipping {title} at {company} — {outcome.get('reason') or 'filtered'}.",
+            role_id,
+        )
+        return
+    if tool not in ("tailor_one", "reassess_one"):
+        return
+    row = outcome.get("row") if isinstance(outcome.get("row"), dict) else {}
+    rating = row.get("rating")
+    parts = [f"{label}: updated {title} at {company}"]
+    if outcome.get("filename"):
+        parts.append(str(outcome["filename"]))
+    if isinstance(rating, (int, float)):
+        parts.append(f"{int(rating)}/100")
+    _append("assistant", " — ".join(parts), role_id)
+
+
+def _run_job_pool(
+    role_id: str,
+    tool: str,
+    jobs: list[dict],
+    tool_plan: dict,
+    state: dict,
+) -> dict | None:
+    from agent_tools import run_tool
+    from common import ROLE_META
+
+    label = ROLE_META[role_id]["label"]
+    if not jobs:
+        return None
+    workers = _pool_workers(len(jobs))
+    verb = "tailor" if tool == "tailor_one" else "re-score"
+    _append(
+        "assistant",
+        f"{label}: {verb} {len(jobs)} job(s) with {workers} worker(s).",
+        role_id,
+    )
+    last: dict | None = None
+    work_q: Queue = Queue()
+    for job in jobs:
+        work_q.put(job)
+    state_lock = threading.Lock()
+    last_box: dict = {"outcome": None}
+
+    def _worker() -> None:
+        while True:
+            if _budget_stop(role_id, tool_plan, state):
+                return
+            try:
+                job = work_q.get_nowait()
+            except Empty:
+                return
+            title = str(job.get("title") or "")
+            company = str(job.get("company") or "")
+            _set_agent(role_id, status=f"{label}: {tool} {title} at {company}")
+            try:
+                outcome = run_tool(role_id, tool, _job_args(job), tool_plan)
+            except Exception as exc:
+                outcome = {
+                    "ok": False,
+                    "tool": tool,
+                    "error": str(exc),
+                    "title": title,
+                    "company": company,
+                }
+            with state_lock:
+                if not outcome.get("ok"):
+                    state["errors"].append(str(outcome.get("error") or f"{tool} failed"))
+                    last_box["outcome"] = outcome
+                else:
+                    last_box["outcome"] = None
+                _apply_tool_result(state, outcome)
+                _announce_job_outcome(role_id, label, outcome)
+
+    _set_agent(role_id, status=f"{label}: {verb} {len(jobs)} with {workers} workers")
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(_worker) for _ in range(workers)]
+        for future in futures:
+            future.result()
+    last = last_box["outcome"]
+    return last
+
+
 def _guard_action(role_id: str, action: dict, state: dict) -> dict:
     from agent_tools import TOOLS
 
@@ -906,8 +1034,6 @@ def _guard_action(role_id: str, action: dict, state: dict) -> dict:
                 continue
             if job.get("_skip") or key in (state.get("skipped") or set()):
                 return _rule_next(role_id, state.get("plan") or {}, state)
-            if not job.get("_assessed"):
-                return {"tool": "assess_one", "args": _job_args(job), "reason": "assess before acting"}
             break
     return {"tool": tool, "args": args, "reason": str(action.get("reason") or "")}
 
@@ -1185,7 +1311,11 @@ def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
                 skip_key = _job_key(last)
                 if skip_key[0]:
                     state["skipped"].add(skip_key)
-            if llm_available():
+            if suggested.get("tool") == "assess_one" and plan.get("tailor"):
+                suggested = {"tool": "tailor_one", "args": suggested.get("args") or {}}
+            if suggested.get("tool") in ("tailor_one", "reassess_one"):
+                action = suggested
+            elif llm_available():
                 decided, error = _llm_decide(role_id, plan, state, last)
                 if decided:
                     action = decided
@@ -1203,6 +1333,11 @@ def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
             budget = _budget_stop(role_id, plan, state)
             if budget:
                 action = budget
+        if not queued and action.get("tool") in ("tailor_one", "reassess_one"):
+            pending = _pending_jobs(role_id, plan, state, action["tool"])
+            if pending:
+                last = _run_job_pool(role_id, action["tool"], pending, tool_plan, state)
+                continue
         if not queued and action.get("tool") == "stop":
             reason = (action.get("args") or {}).get("reason") or "stopped"
             if "budget" in str(reason) or "failures" in str(reason) or "stopping early" in str(reason):
