@@ -456,11 +456,11 @@ function selectedChatRoles() {
   if (chatTarget === "both") {
     return ["em", "tpm"];
   }
-  if (currentView === "em" || currentView === "tpm") {
-    return [currentView];
-  }
   if (chatTarget === "em" || chatTarget === "tpm") {
     return [chatTarget];
+  }
+  if (currentView === "em" || currentView === "tpm") {
+    return [currentView];
   }
   return ["em"];
 }
@@ -476,8 +476,8 @@ function syncChatSend() {
     return;
   }
   const idle = idleSelectedRoles();
-  send.disabled = idle.length === 0;
-  send.textContent = idle.length === 0 ? "Working…" : "Send";
+  send.disabled = selectedChatRoles().length === 0;
+  send.textContent = "Send";
   document.querySelectorAll("[data-chat-agent]").forEach((button) => {
     const role = button.dataset.chatAgent;
     const busy = role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
@@ -499,7 +499,7 @@ function syncChatSend() {
             ? `One agent is busy. Send will start ${idle[0].toUpperCase()} now.`
             : "Both agents are working.";
     } else if (idle.length === 0) {
-      subtitle.textContent = `${chatTarget.toUpperCase()} is working. Click TPM, EM, or Both to start the other.`;
+      subtitle.textContent = `${chatTarget.toUpperCase()} is working. Send a filter (skip too technical, ignore EM titles) and it applies to the rest of the run.`;
     } else {
       subtitle.textContent = `Talking to ${chatTarget.toUpperCase()}. Click Both to run EM and TPM together.`;
     }
@@ -559,7 +559,7 @@ async function sendChatMessage(text) {
       body: JSON.stringify({
         message: text,
         role: chatTarget,
-        roles: idleSelectedRoles(),
+        roles: selectedChatRoles(),
       }),
   });
   let payload = {};
@@ -611,9 +611,6 @@ function setView(viewId, updateHash) {
     lastTableSignature = "";
   }
   currentView = viewId;
-  if (viewId === "em" || viewId === "tpm") {
-    chatTarget = viewId;
-  }
   if (updateHash) {
     const hash = hashForView(viewId);
     if (window.location.hash !== hash) {
@@ -910,7 +907,7 @@ document.getElementById("chat-form").addEventListener("submit", async (event) =>
   const input = document.getElementById("chat-input");
   const text = input.value.trim();
   syncChatSend();
-  if (!text || idleSelectedRoles().length === 0) {
+  if (!text || selectedChatRoles().length === 0) {
     return;
   }
   setChatOpen(true);

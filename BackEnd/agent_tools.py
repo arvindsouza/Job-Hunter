@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 import time
 
 from common import (
@@ -13,9 +15,19 @@ from common import (
     start_fresh_run,
     update_ui_job_row,
 )
+from llm import complete_json, llm_available
 from resume_tailor import load_tailored_resume, reassess_jobs_batch, tailor_jobs_batch
 
-TOOLS = ("scrape", "list_fits", "fetch_jd", "tailor_one", "reassess_one", "update_row", "stop")
+TOOLS = (
+    "scrape",
+    "list_fits",
+    "fetch_jd",
+    "assess_one",
+    "tailor_one",
+    "reassess_one",
+    "update_row",
+    "stop",
+)
 MAX_AGENT_TAILOR_BATCH = 1
 
 
@@ -87,6 +99,7 @@ def run_tool(role_id: str, name: str, args: dict | None = None, plan: dict | Non
         "scrape": _scrape,
         "list_fits": _list_fits,
         "fetch_jd": _fetch_jd,
+        "assess_one": _assess_one,
         "tailor_one": _tailor_one,
         "reassess_one": _reassess_one,
         "update_row": _update_row,
@@ -137,10 +150,117 @@ def _fetch_jd(role_id: str, args: dict, _plan: dict) -> dict:
     }
 
 
+def _wrong_role_reason(role_id: str, title: str) -> str | None:
+    text = (title or "").lower()
+    if role_id == "tpm":
+        looks_em = "engineering manager" in text or bool(re.search(r"\bem\b", text))
+        looks_tpm = "tpm" in text or "program manager" in text or "technical program" in text
+        if looks_em and not looks_tpm:
+            return "title is an Engineering Manager role, not TPM"
+    if role_id == "em":
+        looks_tpm = bool(re.search(r"\btpm\b", text)) or "technical program" in text
+        if looks_tpm:
+            return "title is a TPM role, not Engineering Manager"
+    return None
+
+
+def _needs_instruction_filter(constraints: list[str]) -> bool:
+    blob = " ".join(constraints).lower()
+    return bool(
+        re.search(
+            r"\b("
+            r"skip|ignore|avoid|except|"
+            r"too technical|hands-?on|coding|leetcode|"
+            r"not em|not tpm|only (?:em|tpm)"
+            r")\b",
+            blob,
+        )
+    )
+
+
+def _assess_one(role_id: str, args: dict, plan: dict) -> dict:
+    title, company, link = _job_fields(args)
+    if not title or not company:
+        return {"ok": False, "error": "title and company are required."}
+    constraints = [str(item) for item in (plan.get("constraints") or []) if str(item).strip()]
+    description = str(args.get("description") or "")
+    wrong = _wrong_role_reason(role_id, title)
+    skip = False
+    reason = ""
+    if wrong:
+        skip = True
+        reason = wrong
+    elif _needs_instruction_filter(constraints) and llm_available():
+        if not description and link:
+            fetched = _fetch_jd(role_id, args, plan)
+            if fetched.get("ok"):
+                description = str(fetched.get("description") or "")
+        label = ROLE_META[role_id]["label"]
+        try:
+            payload = complete_json(
+                (
+                    f"You filter one job for a Bengaluru {label} hunt. "
+                    "Skip if the title or JD is clearly the other role (EM vs TPM), "
+                    "or if it violates the user's instructions "
+                    "(for example skip too-technical IC/coding-heavy JDs when asked). "
+                    f"Keep a reasonable {label} match otherwise. "
+                    'Return JSON only: {"skip": true or false, "reason": "short"}.'
+                ),
+                json.dumps(
+                    {
+                        "role": role_id,
+                        "instructions": constraints[-8:],
+                        "title": title,
+                        "company": company,
+                        "description": (description or "")[:2500],
+                    },
+                    ensure_ascii=False,
+                )[:8000],
+                attempts=2,
+                timeout=45,
+            )
+        except Exception as exc:
+            payload = {"skip": False, "reason": str(exc)}
+        if isinstance(payload, dict) and payload.get("skip"):
+            skip = True
+            reason = str(payload.get("reason") or "does not match instructions").strip()
+    if skip:
+        note = f"Skipped: {reason}"
+        row_update = {
+            "note": " | ".join(
+                part for part in [str(args.get("note") or "").strip(), note] if part
+            ),
+        }
+        updated = _write_row(role_id, title, company, link, row_update)
+        return {
+            "ok": True,
+            "skip": True,
+            "reason": reason,
+            "title": title,
+            "company": company,
+            "link": link,
+            "description": description,
+            "row": updated or row_update,
+            "assessed": True,
+        }
+    return {
+        "ok": True,
+        "skip": False,
+        "title": title,
+        "company": company,
+        "link": link,
+        "description": description,
+        "assessed": True,
+    }
+
+
 def _tailor_one(role_id: str, args: dict, plan: dict) -> dict:
     title, company, link = _job_fields(args)
     if not title or not company:
         return {"ok": False, "error": "title and company are required."}
+    screened = _assess_one(role_id, args, plan)
+    if screened.get("skip"):
+        return screened
     description = str(args.get("description") or "")
     if not description and link:
         fetched = _fetch_jd(role_id, args, plan)
