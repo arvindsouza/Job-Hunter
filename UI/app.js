@@ -325,6 +325,7 @@ async function refreshResumes() {
     const data = await response.json();
     paintResumeCard("em", data.em);
     paintResumeCard("tpm", data.tpm);
+    paintResumeCard("pm", data.pm);
   } catch {
     document.getElementById("em-resume-meta").textContent =
       "Start the UI server to upload: python BackEnd\\ui_server.py";
@@ -399,7 +400,7 @@ function paintView() {
   document.querySelectorAll("[data-run-role]").forEach((button) => {
     const busy = roleIsRunning(latestData, button.dataset.runRole);
     button.disabled = busy;
-    const label = button.dataset.runRole === "tpm" ? "TPM" : "EM";
+    const label = { tpm: "TPM", pm: "PM", em: "EM" }[button.dataset.runRole] || "EM";
     button.textContent = busy ? `Running ${label}…` : `Fresh ${label} run`;
   });
 
@@ -886,6 +887,14 @@ document.getElementById("tpm-resume-input").addEventListener("change", (event) =
   const file = event.target.files && event.target.files[0];
   if (file) {
     uploadResume("tpm", file);
+  }
+  event.target.value = "";
+});
+
+document.getElementById("pm-resume-input").addEventListener("change", (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (file) {
+    uploadResume("pm", file);
   }
   event.target.value = "";
 });

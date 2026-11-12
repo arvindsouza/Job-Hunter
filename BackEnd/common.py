@@ -29,7 +29,7 @@ from llm import (
     llm_provider_name,
     load_env,
 )
-from resume_extract import list_resume_summaries, load_profile, save_resume
+from resume_extract import ROLE_FOLDERS, list_resume_summaries, load_profile, save_resume
 from resume_tailor import load_tailored_resume, reassess_with_tailored_resume, tailor_resume_pdf
 
 load_env()
@@ -1312,8 +1312,8 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             self.send_error(404)
             return
         role = (parse_qs(parsed.query).get("role") or [""])[0].lower()
-        if role not in ROLE_META:
-            self._send_json({"error": "role must be em or tpm"}, 400)
+        if role not in ROLE_FOLDERS:
+            self._send_json({"error": "role must be em, tpm, or pm"}, 400)
             return
         length = int(self.headers.get("Content-Length") or 0)
         if length < 8 or length > 20_000_000:

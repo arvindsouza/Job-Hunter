@@ -15,10 +15,11 @@ from llm import analyze_resume, load_context, llm_available
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 ASSETS_DIR = PROJECT_ROOT / "Assets"
 
-ROLE_FOLDERS = {"em": "em", "tpm": "tpm"}
+ROLE_FOLDERS = {"em": "em", "tpm": "tpm", "pm": "pm"}
 ROLE_LABELS = {
     "em": "Engineering Manager",
     "tpm": "Technical Program Manager",
+    "pm": "Project Manager",
 }
 
 SECTION_START = re.compile(
@@ -51,7 +52,7 @@ JD_EXTRA_TERMS = [
 
 def role_dir(role: str) -> Path:
     if role not in ROLE_FOLDERS:
-        raise ValueError("Role must be em or tpm")
+        raise ValueError("Role must be em, tpm, or pm")
     path = ASSETS_DIR / ROLE_FOLDERS[role]
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -236,7 +237,11 @@ def profile_summary(role: str) -> dict:
 
 
 def list_resume_summaries() -> dict:
-    return {"em": profile_summary("em"), "tpm": profile_summary("tpm")}
+    return {
+        "em": profile_summary("em"),
+        "tpm": profile_summary("tpm"),
+        "pm": profile_summary("pm"),
+    }
 
 
 def load_profile(role: str) -> dict | None:
