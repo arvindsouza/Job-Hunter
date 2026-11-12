@@ -420,7 +420,7 @@ def _save_from_payload_row(
 def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[dict]:
     """Rewrite many resumes, falling back to smaller chunks if one LLM call fails."""
     if role not in ROLE_LABELS:
-        return [{"ok": False, "error": "role must be em or tpm"} for _ in jobs]
+        return [{"ok": False, "error": "role must be em, tpm, or pm"} for _ in jobs]
     resume_path = ASSETS_DIR / role / "resume.txt"
     if not resume_path.exists():
         return [{"ok": False, "error": "Upload a resume for this role first."} for _ in jobs]
@@ -532,7 +532,7 @@ def load_tailored_resume(company: str, title: str) -> dict | None:
 
 def reassess_jobs_batch(role: str, jobs: list[dict]) -> list[dict]:
     if role not in ROLE_LABELS:
-        return [{"ok": False, "error": "role must be em or tpm"} for _ in jobs]
+        return [{"ok": False, "error": "role must be em, tpm, or pm"} for _ in jobs]
     if not llm_available():
         return [{"ok": False, "error": "Add GROQ_API_KEY or GEMINI_API_KEY to .env"} for _ in jobs]
     prepared = []

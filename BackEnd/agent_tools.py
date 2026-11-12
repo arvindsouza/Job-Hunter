@@ -161,6 +161,14 @@ def _wrong_role_reason(role_id: str, title: str) -> str | None:
         looks_tpm = bool(re.search(r"\btpm\b", text)) or "technical program" in text
         if looks_tpm:
             return "title is a TPM role, not Engineering Manager"
+    if role_id == "pm":
+        looks_em = "engineering manager" in text or bool(re.search(r"\bem\b", text))
+        looks_tpm = bool(re.search(r"\btpm\b", text)) or "technical program" in text
+        looks_pm = "project manager" in text or bool(re.search(r"\bpm\b", text)) or "pmo" in text
+        if looks_em and not looks_pm:
+            return "title is an Engineering Manager role, not Project Manager"
+        if looks_tpm and not looks_pm:
+            return "title is a TPM role, not Project Manager"
     return None
 
 
@@ -171,7 +179,7 @@ def _needs_instruction_filter(constraints: list[str]) -> bool:
             r"\b("
             r"skip|ignore|avoid|except|"
             r"too technical|hands-?on|coding|leetcode|"
-            r"not em|not tpm|only (?:em|tpm)"
+            r"not em|not tpm|not pm|only (?:em|tpm|pm)"
             r")\b",
             blob,
         )

@@ -34,10 +34,8 @@ def _new_agent(role_id: str) -> dict:
     }
 
 
-AGENTS = {
-    "em": _new_agent("em"),
-    "tpm": _new_agent("tpm"),
-}
+ROLE_IDS = ("em", "tpm", "pm")
+AGENTS = {role_id: _new_agent(role_id) for role_id in ROLE_IDS}
 
 
 def _persist_unlocked() -> None:
@@ -56,7 +54,7 @@ def _persist_unlocked() -> None:
                 "status": AGENTS[role_id].get("status") or "",
                 "constraints": list(AGENTS[role_id].get("constraints") or [])[-12:],
             }
-            for role_id in ("em", "tpm")
+            for role_id in ROLE_IDS
         },
     }
     tmp = CHAT_STATE_PATH.with_suffix(".tmp")
@@ -76,10 +74,10 @@ def _load_chat() -> None:
         return
     was_running = False
     with CHAT_LOCK:
-        CHAT_FOCUS = data.get("focus") if data.get("focus") in ("em", "tpm") else None
+        CHAT_FOCUS = data.get("focus") if data.get("focus") in ROLE_IDS else None
         CHAT_LOG = [item for item in (data.get("log") or []) if isinstance(item, dict)][-40:]
         saved_agents = data.get("agents") if isinstance(data.get("agents"), dict) else {}
-        for role_id in ("em", "tpm"):
+        for role_id in ROLE_IDS:
             saved = saved_agents.get(role_id) if isinstance(saved_agents.get(role_id), dict) else {}
             if saved.get("running"):
                 was_running = True
@@ -121,7 +119,7 @@ def _agent_is_working(role_id: str) -> bool:
 def chat_snapshot() -> dict:
     from common import agent_is_running
 
-    scrape = {role_id: agent_is_running(role_id) for role_id in ("em", "tpm")}
+    scrape = {role_id: agent_is_running(role_id) for role_id in ROLE_IDS}
     with CHAT_LOCK:
         running_by_agent = {
             role_id: bool(
@@ -129,13 +127,13 @@ def chat_snapshot() -> dict:
                 or AGENTS[role_id].get("queue")
                 or scrape[role_id]
             )
-            for role_id in ("em", "tpm")
+            for role_id in ROLE_IDS
         }
         running = any(running_by_agent.values())
         focus = CHAT_FOCUS
         plan = None
         last_plan = None
-        for role_id in ("em", "tpm"):
+        for role_id in ROLE_IDS:
             if running_by_agent[role_id]:
                 plan = AGENTS[role_id]["plan"]
                 focus = role_id
@@ -157,7 +155,7 @@ def chat_snapshot() -> dict:
                     "status": AGENTS[role_id].get("status") or "",
                     "queue": len(AGENTS[role_id].get("queue") or []),
                 }
-                for role_id in ("em", "tpm")
+                for role_id in ROLE_IDS
             },
         }
 
@@ -184,7 +182,7 @@ def end_agent_work(role_id: str) -> None:
 
 def _append(speaker: str, text: str, agent: str | None = None) -> None:
     item = {"role": speaker, "text": text}
-    if agent in ("em", "tpm"):
+    if agent in ROLE_IDS:
         item["agent"] = agent
     with CHAT_LOCK:
         CHAT_LOG.append(item)
@@ -219,7 +217,7 @@ def _plan_summary(plan: dict) -> str:
 
 def _describe_plan(plan: dict, followup: bool = False) -> str:
     roles = " and ".join(
-        "TPM" if role == "tpm" else "EM" for role in plan.get("roles") or ["em"]
+        {"tpm": "TPM", "pm": "PM"}.get(role, "EM") for role in plan.get("roles") or ["em"]
     )
     when = "the past day" if plan.get("time_range") == "24h" else "the past week"
     bits = []
@@ -261,14 +259,23 @@ def _is_followup(text: str) -> bool:
 
 def _mentioned_roles(message: str) -> list[str]:
     text = (message or "").lower()
-    start = re.search(r"\bstart(?:\s+the)?\s+(tpm|em)\b", text)
+    start = re.search(r"\bstart(?:\s+the)?\s+(tpm|em|pm)\b", text)
     if start:
-        return ["tpm" if start.group(1) == "tpm" else "em"]
-    if re.search(r"\b(both(?:\s+roles)?|each role|em and tpm|tpm and em)\b", text):
+        return [start.group(1)]
+    if re.search(r"\b(all(?:\s+three)?(?:\s+roles)?|each role)\b", text):
+        return list(ROLE_IDS)
+    if re.search(r"\b(both(?:\s+roles)?|em and tpm|tpm and em)\b", text):
         return ["em", "tpm"]
     roles: list[str] = []
-    if re.search(r"\b(tpm|tpms|technical program|program manager)\b", text):
+    if re.search(r"\b(tpm|tpms|technical program)\b", text):
         roles.append("tpm")
+    elif re.search(r"\bprogram managers?\b", text) and not re.search(r"\bproject managers?\b", text):
+        roles.append("tpm")
+    if re.search(
+        r"\b(project managers?|project management|pm roles?|pm jobs?|pm listings?)\b",
+        text,
+    ) or re.search(r"(?:^|[^\w])pm(?:$|[^\w])", text):
+        roles.append("pm")
     if re.search(
         r"\b(engineering managers?|eng managers?|engineering leads?|em roles?|em jobs?|em listings?)\b",
         text,
@@ -314,14 +321,14 @@ def _constrain_roles(
     if mentioned:
         return mentioned
     if followup:
-        kept = [role for role in (last_roles or []) if role in ("em", "tpm")]
+        kept = [role for role in (last_roles or []) if role in ROLE_IDS]
         if kept:
             return kept
-    if view_role in ("em", "tpm"):
+    if view_role in ROLE_IDS:
         return [view_role]
-    if CHAT_FOCUS in ("em", "tpm"):
+    if CHAT_FOCUS in ROLE_IDS:
         return [CHAT_FOCUS]
-    cleaned = [role for role in (roles or []) if role in ("em", "tpm")]
+    cleaned = [role for role in (roles or []) if role in ROLE_IDS]
     return cleaned[:1] or ["em"]
 
 
@@ -464,7 +471,7 @@ def _normalize_llm_plan(
     last_plan: dict | None = None,
 ) -> dict:
     roles = _constrain_roles(
-        [role for role in (data.get("roles") or []) if role in ("em", "tpm")],
+        [role for role in (data.get("roles") or []) if role in ROLE_IDS],
         message,
         view_role,
         followup=bool(data.get("followup") or fallback.get("followup")),
@@ -522,8 +529,8 @@ def _normalize_llm_plan(
     return plan
 
 
-COMPILE_SYSTEM = """You compile a user's chat into an execution plan for Bengaluru EM and/or TPM job agents.
-You rationalize the request, then output a sequence of steps. You do not invent a third role.
+COMPILE_SYSTEM = """You compile a user's chat into an execution plan for Bengaluru EM, TPM, and/or PM job agents.
+You rationalize the request, then output a sequence of steps. Roles are only em, tpm, and pm.
 
 intent:
 - hunt: fetch, search, tailor, re-score, or process the table
@@ -533,8 +540,8 @@ intent:
 
 If they say "everything 80 and below" / "80 and below" / "under 80": min_rating=0, max_rating=80.
 "everything" means every row IN THAT BAND, not 0-100.
-If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name both, roles=["em","tpm"].
-If they say start the TPM (or EM) agent and send it my question: intent=answer, that role, question=the previous user question.
+If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name PM or project manager, roles=["pm"]. If they name both, roles=["em","tpm"]. If they name all three, include pm.
+If they say start the TPM, EM, or PM agent and send it my question: intent=answer, that role, question=the previous user question.
 
 steps: ordered objects {"tool": "scrape"|"list_fits"|"process_fits"|"report"|"stop"}.
 - scrape only if they want new jobs
@@ -584,7 +591,7 @@ def _previous_user_text(current: str) -> str:
 
 
 def _compile_instruction(message: str, view_role: str, role_hint: str = "") -> dict:
-    hint = role_hint if role_hint in ("em", "tpm") else (view_role if view_role in ("em", "tpm") else "em")
+    hint = role_hint if role_hint in ROLE_IDS else (view_role if view_role in ROLE_IDS else "em")
     inventory = _inventory(None)
     with CHAT_LOCK:
         last = dict(AGENTS[hint].get("last_plan") or {})
@@ -601,7 +608,7 @@ def _compile_instruction(message: str, view_role: str, role_hint: str = "") -> d
     else:
         fallback["intent"] = "hunt" if fallback.get("act") else "answer"
     fallback["question"] = message
-    if re.search(r"\bstart(?:\s+the)?\s+(tpm|em)\b", text) and re.search(r"\bquestion\b", text):
+    if re.search(r"\bstart(?:\s+the)?\s+(tpm|em|pm)\b", text) and re.search(r"\bquestion\b", text):
         fallback["intent"] = "answer"
         fallback["question"] = _previous_user_text(message)
         fallback["act"] = False
@@ -752,13 +759,13 @@ AGENT_EARLY_STOP_SCORE = 90
 AGENT_MAX_POOL_WORKERS = 6
 AGENT_JOBS_PER_WORKER = 8
 
-DECIDE_SYSTEM = """You are one Bengaluru job-hunt agent (EM or TPM). You only work that agent's table.
+DECIDE_SYSTEM = """You are one Bengaluru job-hunt agent (EM, TPM, or PM). You only work that agent's table.
 Each turn you observe live state and pick the next tool. You are not locked to a script.
 Allowed tools: scrape, list_fits, fetch_jd, assess_one, tailor_one, reassess_one, update_row, stop.
 Return JSON only: {"tool": "...", "args": {}, "reason": "..."}.
 
 Default hunt unless the user said list-only: scrape if they want new jobs and you have not scraped; then list_fits; then for each remaining fit assess_one, then tailor_one, then reassess_one; then stop.
-Always assess_one before tailoring. Skip Engineering Manager titles on TPM (and TPM titles on EM). If the user said to skip too-technical or similar JDs, assess against that and skip those jobs.
+Always assess_one before tailoring. Skip Engineering Manager titles on TPM/PM, TPM titles on EM/PM, and Project Manager-only titles on EM/TPM. If the user said to skip too-technical or similar JDs, assess against that and skip those jobs.
 Obey new mid-run instructions for remaining jobs. Never tailor more than one job per call. Never pass a jobs array longer than 1. Never touch the other role's table.
 Prefer stop when the goal is done, budgets are hit, or the user asked to stop.
 """
@@ -832,14 +839,14 @@ def _is_new_hunt(text: str) -> bool:
 
 def _is_live_instruction(text: str) -> bool:
     blob = (text or "").lower()
-    if re.search(r"\b(did you|have you|was it|were they|how many|start(?:\s+the)?\s+(?:tpm|em))\b", blob):
+    if re.search(r"\b(did you|have you|was it|were they|how many|start(?:\s+the)?\s+(?:tpm|em|pm))\b", blob):
         return False
     return bool(
         re.search(
             r"\b("
             r"skip|ignore|avoid|except|don't|do not|"
             r"too technical|hands-?on|"
-            r"not em|not tpm|only (?:em|tpm)"
+            r"not em|not tpm|not pm|only (?:em|tpm|pm)"
             r")\b",
             blob,
         )
@@ -1487,12 +1494,12 @@ def _dispatch_roles(message: str, view_role: str) -> list[str]:
     mentioned = _mentioned_roles(message)
     if mentioned:
         return mentioned
-    preferred = view_role if view_role in ("em", "tpm") else (CHAT_FOCUS if CHAT_FOCUS in ("em", "tpm") else "em")
+    preferred = view_role if view_role in ROLE_IDS else (CHAT_FOCUS if CHAT_FOCUS in ROLE_IDS else "em")
     if not _agent_is_working(preferred):
         return [preferred]
-    other = "tpm" if preferred == "em" else "em"
-    if not _agent_is_working(other):
-        return [other]
+    for role_id in ROLE_IDS:
+        if role_id != preferred and not _agent_is_working(role_id):
+            return [role_id]
     return [preferred]
 
 
@@ -1504,10 +1511,10 @@ def start_chat_instruction(
     text = (message or "").strip()
     if not text:
         return {"ok": False, "error": "Type an instruction first.", "chat": chat_snapshot()}
-    explicit = [role for role in (requested_roles or []) if role in ("em", "tpm")]
+    explicit = [role for role in (requested_roles or []) if role in ROLE_IDS]
     if view_role == "both" and not explicit:
         explicit = ["em", "tpm"]
-    view = view_role if view_role in ("em", "tpm") else ""
+    view = view_role if view_role in ROLE_IDS else ""
     named = _mentioned_roles(text)
     roles = named or explicit or _dispatch_roles(text, view)
     busy = [role_id for role_id in roles if _agent_is_working(role_id)]
@@ -1521,7 +1528,7 @@ def start_chat_instruction(
         local_intent = "filter"
     elif re.search(
         r"\b(did you|have you|was it|were they|how many|what about)\b|"
-        r"\bstart(?:\s+the)?\s+(?:tpm|em)\b.*\bquestion\b",
+        r"\bstart(?:\s+the)?\s+(?:tpm|em|pm)\b.*\bquestion\b",
         low,
     ):
         local_intent = "answer"
@@ -1542,7 +1549,7 @@ def start_chat_instruction(
         compiled = _compile_instruction(
             text, view or (named[0] if named else ""), (named or explicit or ["em"])[0]
         )
-        roles = named or [role for role in (compiled.get("roles") or []) if role in ("em", "tpm")] or roles
+        roles = named or [role for role in (compiled.get("roles") or []) if role in ROLE_IDS] or roles
         question = str(compiled.get("question") or text)
         for role_id in roles:
             _answer_from_table(role_id, question, compiled)

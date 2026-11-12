@@ -56,6 +56,7 @@ INSTAHYRE_API = "https://www.instahyre.com/api/v1/job_search"
 INSTAHYRE_SKILLS = {
     "em": "Engineering Manager",
     "tpm": "Technical Program Manager",
+    "pm": "Project Manager",
 }
 BROWSER_HEADERS = {
     "User-Agent": (
@@ -116,6 +117,25 @@ def title_fit_tpm(title: str) -> tuple[int, str]:
     return 4, "title is a weak TPM match"
 
 
+def title_fit_pm(title: str) -> tuple[int, str]:
+    t = title.lower()
+    if "project manager" in t or "project management" in t or re.search(r"\bpm\b", t):
+        return TITLE_FIT_MAX, "title is a Project Manager role"
+    if "pmo" in t or "project lead" in t:
+        return 16, "title is a project/PMO role"
+    if "delivery manager" in t or "implementation manager" in t:
+        return 12, "title is delivery/implementation management"
+    if "program manager" in t and "technical program" not in t:
+        return 10, "title is Program Manager"
+    if "technical program" in t or re.search(r"\btpm\b", t):
+        return 6, "title is TPM, not Project Manager"
+    if "engineering manager" in t:
+        return 6, "title is Engineering Manager, not Project Manager"
+    if "manager" in t:
+        return 8, "title includes manager"
+    return 4, "title is a weak PM match"
+
+
 ROLE_META = {
     "em": {
         "search": SEM_SEARCH,
@@ -127,13 +147,18 @@ ROLE_META = {
         "label": "Technical Program Manager",
         "title_fit_fn": title_fit_tpm,
     },
+    "pm": {
+        "search": PM_SEARCH,
+        "label": "Project Manager",
+        "title_fit_fn": title_fit_pm,
+    },
 }
 
 
 def load_agent_config(role_id: str) -> dict | None:
     """Build a scoring config from Assets/<role>. None if no resume is uploaded."""
     if role_id not in ROLE_META:
-        raise ValueError("role_id must be em or tpm")
+        raise ValueError("role_id must be em, tpm, or pm")
     resume_txt = ASSETS_DIR / role_id / "resume.txt"
     if not resume_txt.exists():
         return None
@@ -1099,8 +1124,8 @@ def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
 
 
 def agent_script_path(role_id: str) -> Path:
-    name = "em_agent.py" if role_id == "em" else "tpm_agent.py"
-    return BACKEND_DIR / name
+    names = {"em": "em_agent.py", "tpm": "tpm_agent.py", "pm": "pm_agent.py"}
+    return BACKEND_DIR / names[role_id]
 
 
 def agent_is_running(role_id: str) -> bool:
@@ -1110,12 +1135,12 @@ def agent_is_running(role_id: str) -> bool:
 
 
 def agent_run_status() -> dict[str, bool]:
-    return {"em": agent_is_running("em"), "tpm": agent_is_running("tpm")}
+    return {role_id: agent_is_running(role_id) for role_id in ROLE_META}
 
 
 def start_fresh_run(role_id: str) -> dict:
     if role_id not in ROLE_META:
-        return {"ok": False, "error": "role must be em or tpm"}
+        return {"ok": False, "error": "role must be em, tpm, or pm"}
     if not load_agent_config(role_id):
         return {"ok": False, "error": "Upload a resume for this role first."}
     if agent_is_running(role_id):
@@ -1231,7 +1256,7 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             company = str(body.get("company") or "").strip()
             link = str(body.get("link") or "").strip()
             if role not in ROLE_META:
-                self._send_json({"error": "role must be em or tpm"}, 400)
+                self._send_json({"error": "role must be em, tpm, or pm"}, 400)
                 return
             if not title or not company:
                 self._send_json({"error": "title and company are required"}, 400)
@@ -1261,7 +1286,7 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
             company = str(body.get("company") or "").strip()
             link = str(body.get("link") or "").strip()
             if role not in ROLE_META:
-                self._send_json({"error": "role must be em or tpm"}, 400)
+                self._send_json({"error": "role must be em, tpm, or pm"}, 400)
                 return
             if not title or not company:
                 self._send_json({"error": "title and company are required"}, 400)
@@ -1333,6 +1358,14 @@ class UiRequestHandler(SimpleHTTPRequestHandler):
         self._send_json(summary)
 
 
+def hash_for_role(role_id: str) -> str:
+    if role_id == "tpm":
+        return "#/tpm"
+    if role_id == "pm":
+        return "#/pm"
+    return "#/em"
+
+
 def ui_server_url() -> str:
     return f"http://{UI_HOST}:{UI_PORT}/"
 
@@ -1392,7 +1425,7 @@ def run_agent(role_id: str) -> int:
     elif context.get("error"):
         print(f"Resume context error: {context['error']}")
     if started_server:
-        open_in_chrome(ui_url + ("#/tpm" if role_id == "tpm" else "#/em"))
+        open_in_chrome(ui_url + hash_for_role(role_id))
     else:
         print("UI server already running; this agent will only scrape.\n")
 

@@ -454,12 +454,23 @@ function setChatOpen(open) {
 
 function mentionedChatRoles(text) {
   const value = String(text || "").toLowerCase();
-  if (/\b(both(?:\s+roles)?|each role|em and tpm|tpm and em)\b/.test(value)) {
+  if (/\b(all(?:\s+three)?(?:\s+roles)?|each role)\b/.test(value)) {
+    return ["em", "tpm", "pm"];
+  }
+  if (/\b(both(?:\s+roles)?|em and tpm|tpm and em)\b/.test(value)) {
     return ["em", "tpm"];
   }
   const roles = [];
-  if (/\b(tpm|tpms|technical program|program manager)\b/.test(value)) {
+  if (/\b(tpm|tpms|technical program)\b/.test(value)) {
     roles.push("tpm");
+  } else if (/\bprogram managers?\b/.test(value) && !/\bproject managers?\b/.test(value)) {
+    roles.push("tpm");
+  }
+  if (
+    /\b(project managers?|project management|pm roles?|pm jobs?|pm listings?)\b/.test(value) ||
+    /(^|[^\w])pm($|[^\w])/.test(value)
+  ) {
+    roles.push("pm");
   }
   if (
     /\b(engineering managers?|eng managers?|engineering leads?|em roles?|em jobs?|em listings?)\b/.test(value) ||
@@ -478,10 +489,10 @@ function selectedChatRoles() {
   if (chatTarget === "both") {
     return ["em", "tpm"];
   }
-  if (chatTarget === "em" || chatTarget === "tpm") {
+  if (chatTarget === "em" || chatTarget === "tpm" || chatTarget === "pm") {
     return [chatTarget];
   }
-  if (currentView === "em" || currentView === "tpm") {
+  if (isJobView(currentView)) {
     return [currentView];
   }
   return ["em"];
@@ -502,7 +513,8 @@ function syncChatSend() {
   send.textContent = "Send";
   document.querySelectorAll("[data-chat-agent]").forEach((button) => {
     const role = button.dataset.chatAgent;
-    const busy = role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
+    const busy =
+      role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
     button.classList.toggle("is-active", role === chatTarget);
     button.classList.toggle("is-busy", busy);
     if (role === "both") {
@@ -544,12 +556,12 @@ function paintChat() {
   lastChatSignature = signature;
   const log = document.getElementById("chat-log");
   if (!messages.length) {
-    log.innerHTML = `<p class="chat-empty">Choose EM, TPM, or Both. Example: fetch 30, tailor, and re-score. Both runs the two agents at the same time.</p>`;
+    log.innerHTML = `<p class="chat-empty">Choose EM, TPM, PM, or Both. Example: fetch 30, tailor, and re-score. Both runs EM and TPM together.</p>`;
     return;
   }
   log.innerHTML = messages
     .map((item) => {
-      const tag = item.agent === "tpm" ? "TPM" : item.agent === "em" ? "EM" : "";
+      const tag = { tpm: "TPM", em: "EM", pm: "PM" }[item.agent] || "";
       const tagHtml = tag ? `<span class="chat-agent">${tag}</span>` : "";
       return `<div class="chat-bubble ${item.role === "user" ? "user" : "assistant"}">${tagHtml}${escapeHtml(item.text || "")}</div>`;
     })
@@ -560,7 +572,7 @@ function paintChat() {
 function maybeFocusChatRole() {
   const chat = latestData.chat || {};
   const by = chat.running_by_agent || {};
-  for (const role of ["em", "tpm"]) {
+  for (const role of ["em", "tpm", "pm"]) {
     const running = Boolean(by[role]);
     const finished = !running && lastAgentRunning[role];
     lastAgentRunning[role] = running;
