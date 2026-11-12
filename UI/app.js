@@ -196,6 +196,8 @@ function renderTable(jobs, running, emptyRun) {
           <td>${dash(job.company)}</td>
           <td>${link}</td>
           <td class="rating ${ratingClass(job.rating)}">${ratingLabel(job.rating)}</td>
+          <td class="col-ctc">${dash(job.ctc)}</td>
+          <td class="rating ${ratingClass(job.callback)}">${ratingLabel(job.callback)}</td>
           <td class="col-tailor">
             <button
               type="button"
@@ -234,6 +236,8 @@ function renderTable(jobs, running, emptyRun) {
             <th class="col-company">Company</th>
             <th class="col-link">Link</th>
             <th class="col-rating">Rating</th>
+            <th class="col-ctc" title="Suggested total CTC to enter for this Bengaluru role">CTC</th>
+            <th class="col-callback" title="Chance of a recruiter callback with this resume version">Callback</th>
             <th class="col-tailor">Resume</th>
             <th class="col-reassess">Re-assess</th>
             <th class="col-why">Why</th>
