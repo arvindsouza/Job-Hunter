@@ -36,7 +36,8 @@ load_env()
 
 SEM_SEARCH = "Software Engineering Manager"
 TPM_SEARCH = "Technical Program Manager"
-ALL_ROLES = [SEM_SEARCH, TPM_SEARCH]
+PM_SEARCH = "Project Manager"
+ALL_ROLES = [SEM_SEARCH, TPM_SEARCH, PM_SEARCH]
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = PROJECT_ROOT / "UI"

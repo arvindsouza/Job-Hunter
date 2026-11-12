@@ -12,6 +12,11 @@ const VIEWS = {
     title: "Technical Program Manager",
     emptyRun: "python BackEnd\\tpm_agent.py",
   },
+  pm: {
+    key: "Project Manager",
+    title: "Project Manager",
+    emptyRun: "python BackEnd\\pm_agent.py",
+  },
 };
 
 let currentView = "resumes";
@@ -23,11 +28,12 @@ let latestData = {
   jobs: {
     "Software Engineering Manager": [],
     "Technical Program Manager": [],
+    "Project Manager": [],
   },
 };
 let lastTableSignature = "";
 let lastChatSignature = "";
-let lastAgentRunning = { em: false, tpm: false };
+let lastAgentRunning = { em: false, tpm: false, pm: false };
 let chatOpen = false;
 let chatTarget = "em";
 const pendingJobActions = {};
@@ -68,8 +74,12 @@ function jobsAtOrAboveMin(jobs) {
   );
 }
 
+function isJobView(viewId) {
+  return viewId === "em" || viewId === "tpm" || viewId === "pm";
+}
+
 function roleIsRunning(data, viewId) {
-  if (viewId !== "em" && viewId !== "tpm") {
+  if (!isJobView(viewId)) {
     return false;
   }
   const key = VIEWS[viewId].key;
@@ -80,7 +90,7 @@ function roleIsRunning(data, viewId) {
 }
 
 function roleStatus(data, viewId) {
-  if (viewId !== "em" && viewId !== "tpm") {
+  if (!isJobView(viewId)) {
     return "";
   }
   const key = VIEWS[viewId].key;
@@ -375,12 +385,19 @@ function paintView() {
 
   const emJobs = jobsAtOrAboveMin(latestData.jobs["Software Engineering Manager"]);
   const tpmJobs = jobsAtOrAboveMin(latestData.jobs["Technical Program Manager"]);
+  const pmJobs = jobsAtOrAboveMin(latestData.jobs["Project Manager"]);
   document.getElementById("em-count").textContent = roleIsRunning(latestData, "em")
     ? `(${emJobs.length} working)`
     : `(${emJobs.length})`;
   document.getElementById("tpm-count").textContent = roleIsRunning(latestData, "tpm")
     ? `(${tpmJobs.length} working)`
     : `(${tpmJobs.length})`;
+  const pmCount = document.getElementById("pm-count");
+  if (pmCount) {
+    pmCount.textContent = roleIsRunning(latestData, "pm")
+      ? `(${pmJobs.length} working)`
+      : `(${pmJobs.length})`;
+  }
 
   const statusEl = document.getElementById("live-status");
   const jobsPanel = document.getElementById("jobs-panel");
@@ -604,6 +621,7 @@ async function startFreshRun(role) {
 
 function hashForView(viewId) {
   if (viewId === "tpm") return "#/tpm";
+  if (viewId === "pm") return "#/pm";
   if (viewId === "em") return "#/em";
   return "#/resumes";
 }
@@ -631,6 +649,7 @@ function setView(viewId, updateHash) {
 function viewFromHash() {
   const hash = (window.location.hash || "").toLowerCase();
   if (hash.includes("tpm")) return "tpm";
+  if (hash.includes("pm")) return "pm";
   if (hash.includes("em")) return "em";
   return "resumes";
 }
@@ -754,7 +773,7 @@ async function postJobAction(path, button) {
 }
 
 document.getElementById("jobs-table").addEventListener("click", async (event) => {
-  if (currentView !== "em" && currentView !== "tpm") {
+  if (!isJobView(currentView)) {
     return;
   }
   const reassessBtn = event.target.closest(".reassess-btn");
@@ -847,7 +866,7 @@ document.getElementById("jobs-table").addEventListener("click", async (event) =>
 });
 
 document.getElementById("fresh-run-btn").addEventListener("click", async () => {
-  if (currentView !== "em" && currentView !== "tpm") {
+  if (!isJobView(currentView)) {
     return;
   }
   const button = document.getElementById("fresh-run-btn");
