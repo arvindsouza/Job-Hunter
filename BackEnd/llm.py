@@ -224,6 +224,15 @@ def analyses_dir(role: str) -> Path:
     return path
 
 
+def clear_fit_cache(role: str) -> None:
+    folder = analyses_dir(role)
+    for path in folder.glob("*.json"):
+        try:
+            path.unlink()
+        except OSError:
+            continue
+
+
 def load_context(role: str) -> dict | None:
     path = context_path(role)
     if not path.exists():
@@ -489,7 +498,9 @@ def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> li
     payload = complete_json(
         (
             "You are a hiring-side career coach. Score each job against its tailored resume. "
-            "Do not assume facts that are not in that resume. Return JSON only."
+            "Do not assume facts that are not in that resume. "
+            "Every job must include ctc and callback; do not leave them empty on a re-score. "
+            "Return JSON only."
         ),
         (
             f"Search role being hunted: {role_label}.\n"
@@ -543,15 +554,18 @@ def analyze_job_fit(
     title: str,
     company: str,
     description: str,
+    use_cache: bool = True,
 ) -> dict:
-    cached = _read_cached_fit(role, title, company, description)
-    if cached:
-        return cached
+    if use_cache:
+        cached = _read_cached_fit(role, title, company, description)
+        if cached:
+            return cached
     results = analyze_jobs_fit_batch(
         role,
         role_label,
         context,
         [{"title": title, "company": company, "description": description}],
+        use_cache=use_cache,
     )
     if results and results[0]:
         return results[0]
@@ -563,18 +577,20 @@ def analyze_jobs_fit_batch(
     role_label: str,
     context: dict,
     jobs: list[dict],
+    use_cache: bool = True,
 ) -> list[dict | None]:
-    """Score many jobs in one LLM request. Cached jobs are not sent again."""
+    """Score many jobs in one LLM request. Cached jobs are not sent again unless use_cache is false."""
     results: list[dict | None] = [None] * len(jobs)
     pending: list[tuple[int, str, dict]] = []
     for index, job in enumerate(jobs):
         title = job.get("title", "")
         company = job.get("company", "")
         description = job.get("description", "")
-        cached = _read_cached_fit(role, title, company, description)
-        if cached:
-            results[index] = cached
-            continue
+        if use_cache:
+            cached = _read_cached_fit(role, title, company, description)
+            if cached:
+                results[index] = cached
+                continue
         job_id = f"j{index + 1}"
         pending.append((index, job_id, job))
     if not pending:

@@ -23,6 +23,7 @@ from playwright.sync_api import sync_playwright
 from llm import (
     analyze_job_fit,
     analyze_jobs_fit_batch,
+    clear_fit_cache,
     ensure_resume_context,
     llm_available,
     llm_provider_name,
@@ -217,7 +218,7 @@ def score_job(job: dict, description: str, config: dict) -> dict:
     return score_job_keywords(job.get("title", ""), description, config)
 
 
-def score_jobs(jobs: list[dict], config: dict) -> None:
+def score_jobs(jobs: list[dict], config: dict, use_cache: bool = True) -> None:
     context = config.get("context") or {}
     use_llm = llm_available() and context.get("method") == "llm" and context.get("summary")
     llm_results: list[dict | None] = [None] * len(jobs)
@@ -228,6 +229,7 @@ def score_jobs(jobs: list[dict], config: dict) -> None:
                 config["label"],
                 context,
                 jobs,
+                use_cache=use_cache,
             )
         except Exception:
             llm_results = [None] * len(jobs)
@@ -666,7 +668,7 @@ def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
         job["easy_apply"] = details["easy_apply"]
         ready.append(job)
     publish_ui(ready, f"{config['label']}: scoring {len(ready)} jobs in one LLM request", True, config["search"])
-    score_jobs(ready, config)
+    score_jobs(ready, config, use_cache=False)
     publish_ui(ready, f"{config['label']}: scored {len(ready)} jobs", True, config["search"])
     jobs[:] = ready
 
@@ -740,7 +742,8 @@ def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> 
     if limit == 0:
         return jobs
     seen: set[str] = set()
-    for start in range(0, limit + 25, 25):
+    start = 0
+    while len(jobs) < limit:
         url = (
             "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
             f"?keywords={quote(search_query)}"
@@ -749,9 +752,18 @@ def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> 
             f"&f_TPR=r{seconds}"
             f"&start={start}"
         )
-        try:
-            page_html = http_get(url).decode("utf-8", errors="replace")
-        except Exception:
+        page_html = None
+        for attempt in range(3):
+            try:
+                page_html = http_get(url).decode("utf-8", errors="replace")
+                break
+            except Exception as exc:
+                if "429" in str(exc) and attempt < 2:
+                    time.sleep(2 * (attempt + 1))
+                    continue
+                page_html = None
+                break
+        if page_html is None:
             break
         chunks = re.split(r'class="[^"]*job-search-card', page_html)
         page_count = 0
@@ -796,6 +808,7 @@ def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> 
                 return jobs
         if page_count == 0:
             break
+        start += page_count
     return jobs
 
 
@@ -1108,6 +1121,7 @@ def start_fresh_run(role_id: str) -> dict:
         return {"ok": False, "error": "A fresh run is already in progress for this role."}
 
     meta = ROLE_META[role_id]
+    clear_fit_cache(role_id)
     publish_ui([], f"{meta['label']}: starting fresh run", True, meta["search"])
     command = [sys.executable, "-u", str(agent_script_path(role_id))]
     creationflags = 0

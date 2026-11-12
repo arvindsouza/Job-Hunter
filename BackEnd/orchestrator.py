@@ -887,9 +887,17 @@ def _rule_next(role_id: str, plan: dict, state: dict) -> dict:
             if int(state.get("tailored") or 0) >= max_tailors:
                 continue
             return {"tool": "tailor_one", "args": _job_args(job)}
-        if plan.get("reassess") and has_pdf and not job.get("reassessed"):
+        if plan.get("reassess") and has_pdf and (
+            not job.get("reassessed") or _missing_market_fields(job)
+        ):
             return {"tool": "reassess_one", "args": _job_args(job)}
     return {"tool": "stop", "args": {"reason": "all selected jobs done"}}
+
+
+def _missing_market_fields(job: dict) -> bool:
+    if not str(job.get("ctc") or "").strip():
+        return True
+    return job.get("callback") in (None, "")
 
 
 def _pool_workers(batch_size: int) -> int:
@@ -918,7 +926,9 @@ def _pending_jobs(role_id: str, plan: dict, state: dict, tool: str) -> list[dict
                 continue
             pending.append(job)
         elif tool == "reassess_one":
-            if not plan.get("reassess") or not has_pdf or job.get("reassessed"):
+            if not plan.get("reassess") or not has_pdf:
+                continue
+            if job.get("reassessed") and not _missing_market_fields(job):
                 continue
             pending.append(job)
     return pending

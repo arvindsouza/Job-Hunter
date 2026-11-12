@@ -334,7 +334,8 @@ def _tailor_prompt(
 ) -> dict:
     extra = (
         " Also score each tailored resume against its JD in the same object "
-        "(rating, decision, why, reasoning, matched, missed, note)."
+        "(rating, decision, why, reasoning, matched, missed, note, ctc, callback). "
+        "ctc and callback are required on every job."
         if score
         else ""
     )
@@ -407,7 +408,11 @@ def _save_from_payload_row(
         fit = _fit_result_from_payload(row, job.get("description", ""))
         fit["reassessed"] = True
         saved["row"] = _fit_ui_row(fit, saved["filename"])
-        if not fit.get("score"):
+        if (
+            not fit.get("score")
+            or not str(fit.get("ctc") or "").strip()
+            or fit.get("callback") is None
+        ):
             saved["_needs_score"] = True
     return saved
 
@@ -476,8 +481,10 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
         pending = []
         for index, job in enumerate(jobs):
             saved = results[index]
-            rating = (saved.get("row") or {}).get("rating")
-            if saved.get("ok") and (saved.get("_needs_score") or rating in (0, None)):
+            row = saved.get("row") or {}
+            rating = row.get("rating")
+            missing_market = not str(row.get("ctc") or "").strip() or row.get("callback") in (None, "")
+            if saved.get("ok") and (saved.get("_needs_score") or rating in (0, None) or missing_market):
                 pending.append((index, job, saved))
         if pending:
             fits = analyze_tailored_resumes_fit_batch(
@@ -493,7 +500,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
                 ],
             )
             for (index, _job, saved), fit in zip(pending, fits):
-                if not fit or not fit.get("score"):
+                if not fit:
                     continue
                 saved["row"] = _fit_ui_row(fit, saved["filename"])
                 results[index] = saved
