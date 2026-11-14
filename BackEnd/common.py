@@ -73,6 +73,7 @@ MIN_RATING = 50
 UI_STATE_LOCK = threading.Lock()
 AGENT_LOCK = threading.Lock()
 AGENT_PROCS: dict[str, subprocess.Popen] = {}
+AGENT_STOP: set[str] = set()
 
 JOB_CARD_SELECTORS = [
     "div.base-card.job-search-card",
@@ -1134,6 +1135,35 @@ def agent_is_running(role_id: str) -> bool:
         return proc is not None and proc.poll() is None
 
 
+def agent_stop_flag(role_id: str) -> bool:
+    with AGENT_LOCK:
+        return role_id in AGENT_STOP
+
+
+def stop_agent_process(role_id: str) -> None:
+    with AGENT_LOCK:
+        AGENT_STOP.add(role_id)
+        proc = AGENT_PROCS.pop(role_id, None)
+    if proc is None or proc.poll() is not None:
+        return
+    try:
+        if sys.platform == "win32":
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        else:
+            proc.terminate()
+            try:
+                proc.wait(timeout=3)
+            except Exception:
+                proc.kill()
+    except OSError:
+        pass
+
+
 def agent_run_status() -> dict[str, bool]:
     return {role_id: agent_is_running(role_id) for role_id in ROLE_META}
 
@@ -1145,6 +1175,9 @@ def start_fresh_run(role_id: str) -> dict:
         return {"ok": False, "error": "Upload a resume for this role first."}
     if agent_is_running(role_id):
         return {"ok": False, "error": "A fresh run is already in progress for this role."}
+
+    with AGENT_LOCK:
+        AGENT_STOP.discard(role_id)
 
     meta = ROLE_META[role_id]
     clear_fit_cache(role_id)

@@ -24,7 +24,7 @@ let latestData = {
   status: "",
   running: false,
   running_by_role: {},
-  agent_procs: { em: false, tpm: false },
+  agent_procs: { em: false, tpm: false, pm: false },
   jobs: {
     "Software Engineering Manager": [],
     "Technical Program Manager": [],
@@ -272,7 +272,7 @@ function normalizePayload(payload) {
       running: Boolean(payload.running),
       running_by_role: payload.running_by_role || {},
       status_by_role: payload.status_by_role || {},
-      agent_procs: payload.agent_procs || { em: false, tpm: false },
+      agent_procs: payload.agent_procs || { em: false, tpm: false, pm: false },
       settings: { time_range: timeRange, max_pulls: pulls },
       jobs: payload.jobs,
       chat: payload.chat || { running: false, messages: [], focus_role: null },
@@ -282,7 +282,7 @@ function normalizePayload(payload) {
     status: "",
     running: false,
     running_by_role: {},
-    agent_procs: { em: false, tpm: false },
+    agent_procs: { em: false, tpm: false, pm: false },
     settings: { time_range: timeRange, max_pulls: pulls },
     jobs: payload || {},
     chat: { running: false, messages: [], focus_role: null },
@@ -457,7 +457,16 @@ function mentionedChatRoles(text) {
   if (/\b(all(?:\s+three)?(?:\s+roles)?|each role)\b/.test(value)) {
     return ["em", "tpm", "pm"];
   }
-  if (/\b(both(?:\s+roles)?|em and tpm|tpm and em)\b/.test(value)) {
+  if (/\b(all(?:\s+roles)?|every role|em,?\s*tpm,?\s*(?:and\s+)?pm)\b/.test(value)) {
+    return ["em", "tpm", "pm"];
+  }
+  if (/\b(tpm and pm|pm and tpm)\b/.test(value)) {
+    return ["tpm", "pm"];
+  }
+  if (/\bboth(?:\s+roles)?\b/.test(value)) {
+    return ["em", "tpm", "pm"];
+  }
+  if (/\b(em and tpm|tpm and em)\b/.test(value)) {
     return ["em", "tpm"];
   }
   const roles = [];
@@ -487,7 +496,7 @@ function agentBusy(role) {
 
 function selectedChatRoles() {
   if (chatTarget === "both") {
-    return ["em", "tpm"];
+    return ["em", "tpm", "pm"];
   }
   if (chatTarget === "em" || chatTarget === "tpm" || chatTarget === "pm") {
     return [chatTarget];
@@ -514,7 +523,9 @@ function syncChatSend() {
   document.querySelectorAll("[data-chat-agent]").forEach((button) => {
     const role = button.dataset.chatAgent;
     const busy =
-      role === "both" ? agentBusy("em") && agentBusy("tpm") : agentBusy(role);
+      role === "both"
+        ? agentBusy("em") && agentBusy("tpm") && agentBusy("pm")
+        : agentBusy(role);
     button.classList.toggle("is-active", role === chatTarget);
     button.classList.toggle("is-busy", busy);
     if (role === "both") {
@@ -527,15 +538,17 @@ function syncChatSend() {
     const idle = idleSelectedRoles();
     if (chatTarget === "both") {
       subtitle.textContent =
-        idle.length === 2
-          ? "This message starts EM and TPM together."
-          : idle.length === 1
-            ? `One agent is busy. Send will start ${idle[0].toUpperCase()} now.`
-            : "Both agents are working.";
+        idle.length === 3
+          ? "This message starts EM, TPM, and PM in parallel."
+          : idle.length
+            ? `Busy agents stay on their own run. Send will start ${idle
+                .map((role) => role.toUpperCase())
+                .join(" and ")} now.`
+            : "All three agents are working.";
     } else if (idle.length === 0) {
       subtitle.textContent = `${chatTarget.toUpperCase()} is working. Send a filter (skip too technical, ignore EM titles) and it applies to the rest of the run.`;
     } else {
-      subtitle.textContent = `Talking to ${chatTarget.toUpperCase()}. Click Both to run EM and TPM together.`;
+      subtitle.textContent = `Talking to ${chatTarget.toUpperCase()} only. Click Both to run EM, TPM, and PM in parallel.`;
     }
   }
 }
@@ -556,7 +569,7 @@ function paintChat() {
   lastChatSignature = signature;
   const log = document.getElementById("chat-log");
   if (!messages.length) {
-    log.innerHTML = `<p class="chat-empty">Choose EM, TPM, PM, or Both. Example: fetch 30, tailor, and re-score. Both runs EM and TPM together.</p>`;
+    log.innerHTML = `<p class="chat-empty">Choose EM, TPM, PM, or Both. Example: fetch 30, tailor, and re-score. Both runs all three in parallel.</p>`;
     return;
   }
   log.innerHTML = messages

@@ -31,6 +31,7 @@ def _new_agent(role_id: str) -> dict:
         "constraints": [],
         "refresh_filters": False,
         "stop_requested": False,
+        "run_id": 0,
     }
 
 
@@ -86,10 +87,8 @@ def _load_chat() -> None:
             AGENTS[role_id]["messages"] = [
                 item for item in (saved.get("messages") or []) if isinstance(item, dict)
             ][-40:]
-            AGENTS[role_id]["queue"] = [
-                item for item in (saved.get("queue") or []) if isinstance(item, dict)
-            ]
-            AGENTS[role_id]["status"] = str(saved.get("status") or "")
+            AGENTS[role_id]["queue"] = []
+            AGENTS[role_id]["status"] = ""
             AGENTS[role_id]["constraints"] = [
                 item for item in (saved.get("constraints") or []) if isinstance(item, str) and item.strip()
             ][-12:]
@@ -97,7 +96,11 @@ def _load_chat() -> None:
             AGENTS[role_id]["inflight"] = 0
             AGENTS[role_id]["refresh_filters"] = False
             AGENTS[role_id]["stop_requested"] = False
-        if was_running:
+            AGENTS[role_id]["run_id"] = int(AGENTS[role_id].get("run_id") or 0) + 1
+        if was_running or any(
+            isinstance(saved_agents.get(role_id), dict) and saved_agents[role_id].get("queue")
+            for role_id in ROLE_IDS
+        ):
             CHAT_LOG.append(
                 {
                     "role": "assistant",
@@ -160,24 +163,55 @@ def chat_snapshot() -> dict:
         }
 
 
-def begin_agent_work(role_id: str, status: str = "") -> None:
+def begin_agent_work(role_id: str, status: str = "") -> int:
     with CHAT_LOCK:
         agent = AGENTS[role_id]
-        agent["inflight"] = int(agent.get("inflight") or 0) + 1
+        agent["run_id"] = int(agent.get("run_id") or 0) + 1
+        agent["inflight"] = 1
         agent["running"] = True
+        agent["stop_requested"] = False
         if status:
             agent["status"] = status
+        run_id = int(agent["run_id"])
         _persist_unlocked()
+        return run_id
 
 
-def end_agent_work(role_id: str) -> None:
+def end_agent_work(role_id: str, run_id: int | None = None) -> None:
     with CHAT_LOCK:
         agent = AGENTS[role_id]
+        if run_id is not None and int(agent.get("run_id") or 0) != run_id:
+            return
         agent["inflight"] = max(0, int(agent.get("inflight") or 0) - 1)
         if agent["inflight"] == 0 and not agent.get("queue"):
             agent["running"] = False
             agent["status"] = ""
         _persist_unlocked()
+
+
+def _run_is_current(role_id: str, run_id: int | None) -> bool:
+    if run_id is None:
+        return True
+    with CHAT_LOCK:
+        return int(AGENTS[role_id].get("run_id") or 0) == run_id
+
+
+def stop_agent_work(role_id: str) -> None:
+    from common import ROLE_META, publish_ui, read_jobs_file, stop_agent_process
+
+    with CHAT_LOCK:
+        agent = AGENTS[role_id]
+        agent["queue"] = []
+        agent["stop_requested"] = True
+        agent["running"] = False
+        agent["inflight"] = 0
+        agent["status"] = "Stopped"
+        agent["run_id"] = int(agent.get("run_id") or 0) + 1
+        _persist_unlocked()
+    stop_agent_process(role_id)
+    meta = ROLE_META[role_id]
+    rows = list((read_jobs_file().get("jobs") or {}).get(meta["search"]) or [])
+    publish_ui(rows, f"{meta['label']}: stopped.", False, meta["search"])
 
 
 def _append(speaker: str, text: str, agent: str | None = None) -> None:
@@ -264,7 +298,13 @@ def _mentioned_roles(message: str) -> list[str]:
         return [start.group(1)]
     if re.search(r"\b(all(?:\s+three)?(?:\s+roles)?|each role)\b", text):
         return list(ROLE_IDS)
-    if re.search(r"\b(both(?:\s+roles)?|em and tpm|tpm and em)\b", text):
+    if re.search(r"\b(all(?:\s+roles)?|every role|em,?\s*tpm,?\s*(?:and\s+)?pm)\b", text):
+        return list(ROLE_IDS)
+    if re.search(r"\b(tpm and pm|pm and tpm)\b", text):
+        return ["tpm", "pm"]
+    if re.search(r"\bboth(?:\s+roles)?\b", text):
+        return list(ROLE_IDS)
+    if re.search(r"\b(em and tpm|tpm and em)\b", text):
         return ["em", "tpm"]
     roles: list[str] = []
     if re.search(r"\b(tpm|tpms|technical program)\b", text):
@@ -540,7 +580,7 @@ intent:
 
 If they say "everything 80 and below" / "80 and below" / "under 80": min_rating=0, max_rating=80.
 "everything" means every row IN THAT BAND, not 0-100.
-If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name PM or project manager, roles=["pm"]. If they name both, roles=["em","tpm"]. If they name all three, include pm.
+If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name PM or project manager, roles=["pm"] only — never fold PM into TPM. If they name both/all, roles=["em","tpm","pm"] and those agents run in parallel. If they name TPM and PM, roles=["tpm","pm"].
 If they say start the TPM, EM, or PM agent and send it my question: intent=answer, that role, question=the previous user question.
 
 steps: ordered objects {"tool": "scrape"|"list_fits"|"process_fits"|"report"|"stop"}.
@@ -815,9 +855,11 @@ def add_live_instruction(role_id: str, text: str) -> None:
         constraints.append(cleaned)
         AGENTS[role_id]["constraints"] = constraints[-12:]
         AGENTS[role_id]["refresh_filters"] = True
-        if re.search(r"^\s*stop\b", cleaned, re.I):
-            AGENTS[role_id]["stop_requested"] = True
         _persist_unlocked()
+    if re.search(r"^\s*stop\b", cleaned, re.I):
+        stop_agent_work(role_id)
+        _append("assistant", f"{ROLE_META[role_id]['label']}: stopped.", role_id)
+        return
     _append(
         "assistant",
         f"{ROLE_META[role_id]['label']}: I'll apply that to the rest of this run.",
@@ -973,6 +1015,7 @@ def _run_job_pool(
     jobs: list[dict],
     tool_plan: dict,
     state: dict,
+    run_id: int | None = None,
 ) -> dict | None:
     from agent_tools import run_tool
     from common import ROLE_META
@@ -996,7 +1039,7 @@ def _run_job_pool(
 
     def _worker() -> None:
         while True:
-            if _budget_stop(role_id, tool_plan, state):
+            if not _run_is_current(role_id, run_id) or _budget_stop(role_id, tool_plan, state):
                 return
             try:
                 job = work_q.get_nowait()
@@ -1231,23 +1274,21 @@ def enqueue_agent_job(role_id: str, tool: str, args: dict) -> dict:
         "plan": {"scrape": False, "tailor": tool == "tailor_one", "reassess": True},
     }
     start_worker = False
+    run_id = None
     with CHAT_LOCK:
         AGENTS[role_id].setdefault("queue", []).append(item)
-        if not AGENTS[role_id]["running"]:
-            AGENTS[role_id]["inflight"] = int(AGENTS[role_id].get("inflight") or 0) + 1
-            AGENTS[role_id]["running"] = True
-            AGENTS[role_id]["status"] = f"Queued {tool}"
-            start_worker = True
+        start_worker = not AGENTS[role_id]["running"]
         _persist_unlocked()
     title = str((args or {}).get("title") or "job")
     verb = "tailor" if tool == "tailor_one" else "re-score"
     _append("assistant", f"{ROLE_META[role_id]['label']}: queued {verb} for {title}.", role_id)
     if start_worker:
-        threading.Thread(target=_run_queue_agent, args=(role_id,), daemon=True).start()
+        run_id = begin_agent_work(role_id, f"Queued {tool}")
+        threading.Thread(target=_run_queue_agent, args=(role_id, run_id), daemon=True).start()
     return {"ok": True, "queued": True, "chat": chat_snapshot()}
 
 
-def _run_queue_agent(role_id: str) -> None:
+def _run_queue_agent(role_id: str, run_id: int | None = None) -> None:
     try:
         plan = {
             "scrape": False,
@@ -1257,7 +1298,7 @@ def _run_queue_agent(role_id: str) -> None:
             "min_rating": 0,
             "max_rating": 100,
         }
-        item = _run_role(role_id, plan, queue_only=True)
+        item = _run_role(role_id, plan, queue_only=True, run_id=run_id)
         lines = [
             f"{role_id.upper()} queued work done.",
             f"{item['tailored']} tailored, {item['reassessed']} re-scored.",
@@ -1269,10 +1310,10 @@ def _run_queue_agent(role_id: str) -> None:
     except Exception as exc:
         _append("assistant", f"{role_id.upper()} queued work stopped: {exc}", role_id)
     finally:
-        end_agent_work(role_id)
+        end_agent_work(role_id, run_id)
 
 
-def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
+def _run_role(role_id: str, plan: dict, queue_only: bool = False, run_id: int | None = None) -> dict:
     from agent_tools import run_tool
     from common import ROLE_META, load_agent_config
 
@@ -1304,6 +1345,8 @@ def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
 
     last: dict | None = None
     while True:
+        if not _run_is_current(role_id, run_id) or _stop_requested(role_id):
+            break
         queued = pop_agent_queue(role_id)
         tool_plan = dict(plan)
         tool_plan["constraints"] = _agent_constraints(role_id)
@@ -1353,7 +1396,7 @@ def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
         if not queued and action.get("tool") in ("tailor_one", "reassess_one"):
             pending = _pending_jobs(role_id, plan, state, action["tool"])
             if pending:
-                last = _run_job_pool(role_id, action["tool"], pending, tool_plan, state)
+                last = _run_job_pool(role_id, action["tool"], pending, tool_plan, state, run_id)
                 continue
         if not queued and action.get("tool") == "stop":
             reason = (action.get("args") or {}).get("reason") or "stopped"
@@ -1426,7 +1469,13 @@ def _run_role(role_id: str, plan: dict, queue_only: bool = False) -> dict:
     }
 
 
-def _execute_role(role_id: str, message: str, view_role: str = "", plan: dict | None = None) -> None:
+def _execute_role(
+    role_id: str,
+    message: str,
+    view_role: str = "",
+    plan: dict | None = None,
+    run_id: int | None = None,
+) -> None:
     from common import save_settings
 
     try:
@@ -1462,16 +1511,14 @@ def _execute_role(role_id: str, message: str, view_role: str = "", plan: dict | 
             add_live_instruction(role_id, message)
             return
         if intent == "stop":
-            with CHAT_LOCK:
-                AGENTS[role_id]["stop_requested"] = True
-                _persist_unlocked()
-            _append("assistant", f"{role_id.upper()}: stop requested.", role_id)
+            stop_agent_work(role_id)
+            _append("assistant", f"{role_id.upper()}: stopped.", role_id)
             return
         if not plan.get("act"):
             return
         _set_agent(role_id, last_plan=plan)
         save_settings({"time_range": plan["time_range"], "max_pulls": plan["max_pulls"]})
-        item = _run_role(role_id, plan)
+        item = _run_role(role_id, plan, run_id=run_id)
         if any(step.get("tool") == "report" for step in steps):
             _answer_from_table(role_id, question or message, plan)
         lines = [
@@ -1487,19 +1534,16 @@ def _execute_role(role_id: str, message: str, view_role: str = "", plan: dict | 
     except Exception as exc:
         _append("assistant", f"{role_id.upper()} stopped: {exc}", role_id)
     finally:
-        end_agent_work(role_id)
+        end_agent_work(role_id, run_id)
 
 
 def _dispatch_roles(message: str, view_role: str) -> list[str]:
     mentioned = _mentioned_roles(message)
     if mentioned:
         return mentioned
+    if view_role == "both":
+        return list(ROLE_IDS)
     preferred = view_role if view_role in ROLE_IDS else (CHAT_FOCUS if CHAT_FOCUS in ROLE_IDS else "em")
-    if not _agent_is_working(preferred):
-        return [preferred]
-    for role_id in ROLE_IDS:
-        if role_id != preferred and not _agent_is_working(role_id):
-            return [role_id]
     return [preferred]
 
 
@@ -1513,7 +1557,7 @@ def start_chat_instruction(
         return {"ok": False, "error": "Type an instruction first.", "chat": chat_snapshot()}
     explicit = [role for role in (requested_roles or []) if role in ROLE_IDS]
     if view_role == "both" and not explicit:
-        explicit = ["em", "tpm"]
+        explicit = list(ROLE_IDS)
     view = view_role if view_role in ROLE_IDS else ""
     named = _mentioned_roles(text)
     roles = named or explicit or _dispatch_roles(text, view)
@@ -1540,10 +1584,8 @@ def start_chat_instruction(
         return {"ok": True, "chat": chat_snapshot()}
     if local_intent == "stop":
         for role_id in roles:
-            with CHAT_LOCK:
-                AGENTS[role_id]["stop_requested"] = True
-                _persist_unlocked()
-            _append("assistant", f"{role_id.upper()}: stop requested.", role_id)
+            stop_agent_work(role_id)
+            _append("assistant", f"{role_id.upper()}: stopped.", role_id)
         return {"ok": True, "chat": chat_snapshot()}
     if local_intent == "answer":
         compiled = _compile_instruction(
@@ -1572,14 +1614,14 @@ def start_chat_instruction(
     global CHAT_FOCUS
     CHAT_FOCUS = idle[0]
     for role_id in idle:
-        begin_agent_work(role_id, "Working…")
+        run_id = begin_agent_work(role_id, "Working…")
         with CHAT_LOCK:
             AGENTS[role_id]["messages"].append({"role": "user", "text": text})
             AGENTS[role_id]["messages"] = AGENTS[role_id]["messages"][-40:]
             _persist_unlocked()
         threading.Thread(
             target=_execute_role,
-            args=(role_id, text, role_id),
+            args=(role_id, text, role_id, None, run_id),
             daemon=True,
         ).start()
     return {"ok": True, "chat": chat_snapshot()}

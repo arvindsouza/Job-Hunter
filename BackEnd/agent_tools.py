@@ -9,6 +9,7 @@ import time
 from common import (
     ROLE_META,
     agent_is_running,
+    agent_stop_flag,
     fetch_job_details,
     load_agent_config,
     read_jobs_file,
@@ -60,6 +61,8 @@ def _wait_for_agent(role_id: str, timeout: int = 2400) -> bool:
     seen_running = False
     started_deadline = time.time() + 90
     while time.time() < deadline:
+        if agent_stop_flag(role_id):
+            return True
         running = agent_is_running(role_id)
         if running:
             seen_running = True
