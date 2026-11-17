@@ -23,10 +23,13 @@ from playwright.sync_api import sync_playwright
 from llm import (
     analyze_job_fit,
     analyze_jobs_fit_batch,
+    attach_yoe_fields,
     clear_fit_cache,
+    coerce_candidate_yoe,
     ensure_resume_context,
     llm_available,
     llm_provider_name,
+    load_context,
     load_env,
 )
 from resume_extract import ROLE_FOLDERS, list_resume_summaries, load_profile, save_resume
@@ -212,7 +215,7 @@ def score_job_keywords(title: str, description: str, config: dict) -> dict:
         for pattern, label in config.get("gap_signals", [])
         if re.search(pattern, blob, flags=re.I)
     ]
-    return {
+    result = {
         "score": score,
         "title_note": title_note,
         "matched": matched,
@@ -224,6 +227,11 @@ def score_job_keywords(title: str, description: str, config: dict) -> dict:
         "note": "",
         "method": "keywords",
     }
+    return attach_yoe_fields(
+        result,
+        coerce_candidate_yoe((config.get("context") or {}).get("years_experience")),
+        f"{title}\n{description}",
+    )
 
 
 def score_job(job: dict, description: str, config: dict) -> dict:
@@ -683,21 +691,23 @@ def fetch_job_details(page, url: str) -> dict:
 
 
 def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
-    ready: list[dict] = []
     total = len(jobs)
+    kept: list[dict] = []
     for index, job in enumerate(jobs, start=1):
-        publish_ui(ready, f"{config['label']}: fetching JDs ({index}/{total})", True, config["search"])
+        publish_ui(jobs, f"{config['label']}: fetching JDs ({index}/{total})", True, config["search"])
         details = fetch_job_details(page, job["link"])
         if not posted_in_selected_range(details.get("posted_at"), job.get("source")):
             continue
         job["description"] = details["description"]
         job["apply_url"] = details["apply_url"]
         job["easy_apply"] = details["easy_apply"]
-        ready.append(job)
-    publish_ui(ready, f"{config['label']}: scoring {len(ready)} jobs in one LLM request", True, config["search"])
-    score_jobs(ready, config, use_cache=False)
-    publish_ui(ready, f"{config['label']}: scored {len(ready)} jobs", True, config["search"])
-    jobs[:] = ready
+        kept.append(job)
+    if not kept:
+        kept = list(jobs)
+    publish_ui(jobs, f"{config['label']}: scoring {len(kept)} jobs in one LLM request", True, config["search"])
+    score_jobs(kept, config, use_cache=False)
+    publish_ui(jobs, f"{config['label']}: scored {len(kept)} jobs", True, config["search"])
+    jobs[:] = kept
 
 
 def normalize_time_range(value: str | None) -> str:
@@ -983,7 +993,14 @@ def extract_jobs(page, search_query: str) -> list[dict[str, str]]:
     return jobs
 
 
-def job_to_ui_row(job: dict) -> dict:
+def _candidate_yoe_for_search(search: str) -> float | None:
+    for role_id, meta in ROLE_META.items():
+        if meta["search"] == search:
+            return coerce_candidate_yoe((load_context(role_id) or {}).get("years_experience"))
+    return None
+
+
+def job_to_ui_row(job: dict, candidate_yoe: float | None = None) -> dict:
     row = {
         "title": job.get("title", ""),
         "company": job.get("company", ""),
@@ -992,6 +1009,8 @@ def job_to_ui_row(job: dict) -> dict:
         "rating": job.get("score"),
         "ctc": job.get("ctc") or "",
         "callback": job.get("callback"),
+        "jd_yoe": job.get("jd_yoe") or "",
+        "yoe_mismatch": bool(job.get("yoe_mismatch")),
         "why": job.get("reasoning")
         or job.get("why")
         or " | ".join(
@@ -1018,6 +1037,25 @@ def job_to_ui_row(job: dict) -> dict:
     }
     if job.get("reassessed"):
         row["reassessed"] = True
+    years = candidate_yoe
+    if years is None:
+        years = _candidate_yoe_for_search(str(job.get("search") or ""))
+    attach_yoe_fields(
+        row,
+        years,
+        " ".join(
+            part
+            for part in [
+                job.get("description"),
+                job.get("jd_yoe"),
+                row.get("why"),
+                row.get("note"),
+                job.get("reasoning"),
+                job.get("title_note"),
+            ]
+            if part
+        ),
+    )
     return row
 
 
@@ -1042,11 +1080,29 @@ def update_ui_job_row(role_search: str, title: str, company: str, link: str, upd
             if link and row.get("link") and row.get("link") != link:
                 continue
             row.update(updates)
+            attach_yoe_fields(
+                row,
+                _candidate_yoe_for_search(role_search),
+                " ".join(
+                    part
+                    for part in [row.get("jd_yoe"), row.get("why"), row.get("note")]
+                    if part
+                ),
+            )
             updated = row
             break
         if updated is None:
             updated = {"title": title, "company": company, "link": link, "easy_apply": False}
             updated.update(updates)
+            attach_yoe_fields(
+                updated,
+                _candidate_yoe_for_search(role_search),
+                " ".join(
+                    part
+                    for part in [updated.get("jd_yoe"), updated.get("why"), updated.get("note")]
+                    if part
+                ),
+            )
             rows.append(updated)
         rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
         snapshot["status"] = f"Re-analyzed {title} at {company} with tailored resume"
@@ -1097,17 +1153,32 @@ def read_jobs_file() -> dict:
     data["running_by_role"] = running_by_role
     data["status_by_role"] = status_by_role
     data["running"] = any(running_by_role.values())
+    yoe_by_search = {
+        meta["search"]: coerce_candidate_yoe((load_context(role_id) or {}).get("years_experience"))
+        for role_id, meta in ROLE_META.items()
+    }
+    for search, rows in jobs.items():
+        years = yoe_by_search.get(search)
+        for row in rows:
+            if isinstance(row, dict):
+                attach_yoe_fields(
+                    row,
+                    years,
+                    " ".join(
+                        part
+                        for part in [row.get("jd_yoe"), row.get("why"), row.get("note")]
+                        if part
+                    ),
+                )
     return data
 
 
 def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
     """Replace this role's table. The other role is left unchanged."""
     rows = []
+    candidate_yoe = _candidate_yoe_for_search(role)
     for job in jobs:
-        score = job.get("score")
-        if score is not None and score < MIN_RATING:
-            continue
-        rows.append(job_to_ui_row(job))
+        rows.append(job_to_ui_row(job, candidate_yoe))
     rows.sort(key=lambda job: job.get("rating") if job.get("rating") is not None else -1, reverse=True)
 
     with UI_STATE_LOCK:

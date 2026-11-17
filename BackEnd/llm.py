@@ -376,11 +376,128 @@ FIT_FIELDS = (
     "callback (integer 0-100: chance of a recruiter callback if they apply with "
     "THIS resume version. Not the same as rating. Rating is fit quality. Callback "
     "is odds of hearing back given title match, competition, company, and how "
-    "clearly this resume evidences the JD)."
+    "clearly this resume evidences the JD),\n"
+    "jd_yoe (string: the JD's stated total years-of-experience bar, e.g. \"12+\", "
+    "\"10-15\", \"8 years\". Empty string if the JD has no overall YOE requirement. "
+    "Do not use a skill-specific years ask such as \"2+ years of Python\".),\n"
+    "yoe_mismatch (boolean: true only when the JD has a hard overall YOE minimum "
+    "strictly above the candidate's years_experience, such as 12+ vs 8)."
 )
 
 
-def _fit_result_from_payload(data: dict, description: str) -> dict:
+def coerce_candidate_yoe(value) -> float | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        years = float(value)
+        return years if 0 < years <= 50 else None
+    match = re.search(r"(\d{1,2}(?:\.\d+)?)", str(value))
+    if not match:
+        return None
+    years = float(match.group(1))
+    return years if 0 < years <= 50 else None
+
+
+def _yoe_min_from_label(label: str) -> float | None:
+    text = (label or "").strip().lower()
+    if not text:
+        return None
+    plus = re.search(r"(\d{1,2}(?:\.\d+)?)\s*\+", text)
+    if plus:
+        return float(plus.group(1))
+    spanned = re.search(
+        r"(\d{1,2}(?:\.\d+)?)\s*(?:-|–|to)\s*(\d{1,2}(?:\.\d+)?)",
+        text,
+    )
+    if spanned:
+        return float(spanned.group(1))
+    minimum = re.search(
+        r"(?:minimum|min(?:imum)?(?:\s+of)?|at least|over|more than|no less than)\s*"
+        r"(\d{1,2}(?:\.\d+)?)",
+        text,
+    )
+    if minimum:
+        return float(minimum.group(1))
+    lone = re.search(r"(\d{1,2}(?:\.\d+)?)", text)
+    if lone:
+        return float(lone.group(1))
+    return None
+
+
+def _looks_like_total_yoe(window: str) -> bool:
+    return bool(
+        re.search(
+            r"\b("
+            r"experience|exp(?:erience)?|yoe|overall|professional|"
+            r"industry|total years|years in"
+            r")\b",
+            window,
+            flags=re.I,
+        )
+    )
+
+
+def parse_jd_yoe(text: str) -> tuple[str, float | None]:
+    blob = re.sub(r"\s+", " ", text or "")
+    if not blob:
+        return "", None
+    patterns = (
+        r"(\d{1,2}(?:\.\d+)?)\s*\+\s*(?:years?|yrs?|yoe)?",
+        r"(\d{1,2}(?:\.\d+)?)\s*(?:years?|yrs?|yoe)\s*(?:\+|or more|and above|and up)",
+        r"(?:minimum|min(?:imum)?(?:\s+of)?|at least|over|more than|no less than)\s*"
+        r"(\d{1,2}(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?|yoe)",
+        r"(\d{1,2}(?:\.\d+)?)\s*(?:-|–|to)\s*(\d{1,2}(?:\.\d+)?)\s*(?:years?|yrs?|yoe)",
+    )
+    for pattern in patterns:
+        for match in re.finditer(pattern, blob, flags=re.I):
+            start = max(0, match.start() - 48)
+            end = min(len(blob), match.end() + 48)
+            if not _looks_like_total_yoe(blob[start:end]):
+                continue
+            groups = [g for g in match.groups() if g]
+            low = float(groups[0])
+            if "to" in match.group(0).lower() or "-" in match.group(0) or "–" in match.group(0):
+                high = float(groups[1]) if len(groups) > 1 else low
+                label = f"{int(low) if low.is_integer() else low}–{int(high) if high.is_integer() else high}"
+            elif "+" in match.group(0) or re.search(r"or more|and above|and up|at least|minimum|over|more than", match.group(0), re.I):
+                label = f"{int(low) if low.is_integer() else low}+"
+            else:
+                label = f"{int(low) if low.is_integer() else low}+"
+            return label, low
+    return "", None
+
+
+def attach_yoe_fields(target: dict, candidate_yoe: float | None, extra_text: str = "") -> dict:
+    llm_label = str(target.get("jd_yoe") or "").strip()
+    blob = " ".join(
+        part
+        for part in [
+            llm_label,
+            extra_text,
+            str(target.get("description") or ""),
+            str(target.get("why") or ""),
+            str(target.get("reasoning") or ""),
+            str(target.get("note") or ""),
+            str(target.get("title_note") or ""),
+        ]
+        if part
+    )
+    parsed_label, parsed_min = parse_jd_yoe(blob)
+    label = llm_label or parsed_label
+    jd_min = _yoe_min_from_label(label) if label else parsed_min
+    if not label and parsed_label:
+        label = parsed_label
+    mismatch = bool(
+        candidate_yoe is not None and jd_min is not None and jd_min > candidate_yoe + 0.05
+    )
+    target["jd_yoe"] = label
+    target["yoe_mismatch"] = mismatch
+    return target
+
+
+def _fit_result_from_payload(data: dict, description: str, candidate_yoe: float | None = None) -> dict:
     nested = data.get("resume") if isinstance(data.get("resume"), dict) else {}
     score = None
     for source in (data, nested):
@@ -413,7 +530,14 @@ def _fit_result_from_payload(data: dict, description: str) -> dict:
         ctc = _coerce_ctc(source.get("ctc") or source.get("suggested_ctc"))
         if ctc:
             break
-    return {
+    jd_yoe = ""
+    for source in (data, nested):
+        if not isinstance(source, dict):
+            continue
+        jd_yoe = str(source.get("jd_yoe") or source.get("years_required") or "").strip()
+        if jd_yoe:
+            break
+    result = {
         "score": score,
         "title_note": why,
         "matched": matched,
@@ -425,10 +549,12 @@ def _fit_result_from_payload(data: dict, description: str) -> dict:
         "note": note,
         "ctc": ctc,
         "callback": callback,
+        "jd_yoe": jd_yoe,
         "decision": str(data.get("decision") or "").strip().lower(),
         "method": "llm",
         "provider": llm_provider_name(),
     }
+    return attach_yoe_fields(result, candidate_yoe, description)
 
 
 def _cache_path(role: str, title: str, company: str, description: str) -> Path:
@@ -465,7 +591,11 @@ def _rows_by_id(payload: dict) -> dict[str, dict]:
     return by_id
 
 
-def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> list[dict | None]:
+def analyze_tailored_resumes_fit_batch(
+    role_label: str,
+    items: list[dict],
+    candidate_yoe: float | None = None,
+) -> list[dict | None]:
     """Score many tailored-resume/JD pairs in one LLM request."""
     if not items:
         return []
@@ -499,11 +629,12 @@ def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> li
         (
             "You are a hiring-side career coach. Score each job against its tailored resume. "
             "Do not assume facts that are not in that resume. "
-            "Every job must include ctc and callback; do not leave them empty on a re-score. "
+            "Every job must include ctc, callback, jd_yoe, and yoe_mismatch; do not leave them empty on a re-score. "
             "Return JSON only."
         ),
         (
             f"Search role being hunted: {role_label}.\n"
+            f"Candidate years of experience: {candidate_yoe if candidate_yoe is not None else 'unknown'}.\n"
             f"JOBS JSON ({len(packed)} listings):\n{json.dumps(packed, ensure_ascii=False)}\n\n"
             "Return JSON: {\"jobs\": [ ... one object per job ... ]}.\n"
             "Each object must include:\n"
@@ -518,7 +649,7 @@ def analyze_tailored_resumes_fit_batch(role_label: str, items: list[dict]) -> li
         if not row:
             results.append(None)
             continue
-        fit = _fit_result_from_payload(row, item.get("description", ""))
+        fit = _fit_result_from_payload(row, item.get("description", ""), candidate_yoe)
         fit["reassessed"] = True
         results.append(fit)
     return results
@@ -582,6 +713,7 @@ def analyze_jobs_fit_batch(
     """Score many jobs in one LLM request. Cached jobs are not sent again unless use_cache is false."""
     results: list[dict | None] = [None] * len(jobs)
     pending: list[tuple[int, str, dict]] = []
+    candidate_yoe = coerce_candidate_yoe((context or {}).get("years_experience"))
     for index, job in enumerate(jobs):
         title = job.get("title", "")
         company = job.get("company", "")
@@ -589,7 +721,9 @@ def analyze_jobs_fit_batch(
         if use_cache:
             cached = _read_cached_fit(role, title, company, description)
             if cached:
-                results[index] = cached
+                results[index] = attach_yoe_fields(
+                    dict(cached), candidate_yoe, description
+                )
                 continue
         job_id = f"j{index + 1}"
         pending.append((index, job_id, job))
@@ -630,7 +764,7 @@ def analyze_jobs_fit_batch(
         row = by_id.get(job_id)
         if not row:
             continue
-        result = _fit_result_from_payload(row, job.get("description", ""))
+        result = _fit_result_from_payload(row, job.get("description", ""), candidate_yoe)
         _write_cached_fit(role, job.get("title", ""), job.get("company", ""), job.get("description", ""), result)
         results[index] = result
     return results

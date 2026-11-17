@@ -386,6 +386,17 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.col-yoe {
+  min-width: 110px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.col-yoe.is-mismatch {
+  color: var(--low);
+  font-weight: 700;
+}
+
 .col-why,
 .col-weak,
 .col-note {

@@ -68,10 +68,7 @@ function dash(value) {
 const MIN_RATING = 50;
 
 function jobsAtOrAboveMin(jobs) {
-  return (jobs || []).filter(
-    (job) =>
-      job.reassessed || job.rating == null || job.rating === "" || job.rating >= MIN_RATING
-  );
+  return jobs || [];
 }
 
 function isJobView(viewId) {
@@ -208,6 +205,9 @@ function renderTable(jobs, running, emptyRun) {
           <td class="rating ${ratingClass(job.rating)}">${ratingLabel(job.rating)}</td>
           <td class="col-ctc">${dash(job.ctc)}</td>
           <td class="rating ${ratingClass(job.callback)}">${ratingLabel(job.callback)}</td>
+          <td class="col-yoe${job.yoe_mismatch ? " is-mismatch" : ""}">${
+            job.yoe_mismatch ? escapeHtml(job.jd_yoe || "Mismatch") : "—"
+          }</td>
           <td class="col-tailor">
             <button
               type="button"
@@ -248,6 +248,7 @@ function renderTable(jobs, running, emptyRun) {
             <th class="col-rating">Rating</th>
             <th class="col-ctc" title="Suggested total CTC to enter for this Bengaluru role">CTC</th>
             <th class="col-callback" title="Chance of a recruiter callback with this resume version">Callback</th>
+            <th class="col-yoe" title="Hard years-of-experience bar on the JD that is above this resume">YOE mismatch</th>
             <th class="col-tailor">Resume</th>
             <th class="col-reassess">Re-assess</th>
             <th class="col-why">Why</th>
@@ -454,10 +455,10 @@ function setChatOpen(open) {
 
 function mentionedChatRoles(text) {
   const value = String(text || "").toLowerCase();
-  if (/\b(all(?:\s+three)?(?:\s+roles)?|each role)\b/.test(value)) {
+  if (/\b(all three(?:\s+roles)?|all roles|each role|every role)\b/.test(value)) {
     return ["em", "tpm", "pm"];
   }
-  if (/\b(all(?:\s+roles)?|every role|em,?\s*tpm,?\s*(?:and\s+)?pm)\b/.test(value)) {
+  if (/\b(em,?\s*tpm,?\s*(?:and\s+)?pm)\b/.test(value)) {
     return ["em", "tpm", "pm"];
   }
   if (/\b(tpm and pm|pm and tpm)\b/.test(value)) {

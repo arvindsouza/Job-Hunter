@@ -296,9 +296,9 @@ def _mentioned_roles(message: str) -> list[str]:
     start = re.search(r"\bstart(?:\s+the)?\s+(tpm|em|pm)\b", text)
     if start:
         return [start.group(1)]
-    if re.search(r"\b(all(?:\s+three)?(?:\s+roles)?|each role)\b", text):
+    if re.search(r"\b(all three(?:\s+roles)?|all roles|each role|every role)\b", text):
         return list(ROLE_IDS)
-    if re.search(r"\b(all(?:\s+roles)?|every role|em,?\s*tpm,?\s*(?:and\s+)?pm)\b", text):
+    if re.search(r"\b(em,?\s*tpm,?\s*(?:and\s+)?pm)\b", text):
         return list(ROLE_IDS)
     if re.search(r"\b(tpm and pm|pm and tpm)\b", text):
         return ["tpm", "pm"]
@@ -372,6 +372,27 @@ def _constrain_roles(
     return cleaned[:1] or ["em"]
 
 
+def _wants_all_rows(text: str, table_work: bool = False) -> bool:
+    low = (text or "").lower()
+    named_count = bool(re.search(r"\b\d{1,3}\b", low))
+    all_roles = bool(re.search(r"\b(all three|all roles|each role|every role)\b", low))
+    if re.search(r"\b(all|every|entire|everything)\b", low) and not all_roles:
+        return True
+    if table_work and not named_count:
+        return True
+    return False
+
+
+def _max_tailors(plan: dict) -> int:
+    if plan.get("all"):
+        return min(AGENT_MAX_TAILORS_ALL, max(1, int(plan.get("top_n") or AGENT_MAX_TAILORS_ALL)))
+    return min(int(plan.get("top_n") or AGENT_MAX_TAILORS), AGENT_MAX_TAILORS)
+
+
+def _run_minutes(plan: dict) -> int:
+    return AGENT_MAX_MINUTES_ALL if plan.get("all") else AGENT_MAX_MINUTES
+
+
 def _heuristic_plan(message: str, inventory: dict, view_role: str = "", last_plan: dict | None = None) -> dict:
     text = message.lower()
     mentioned = _mentioned_roles(text)
@@ -387,7 +408,11 @@ def _heuristic_plan(message: str, inventory: dict, view_role: str = "", last_pla
     )
 
     numbers = [int(n) for n in re.findall(r"\b(\d{1,3})\b", text)]
-    want_all = bool(re.search(r"\b(all|every|entire|everything)\b", text))
+    mentioned_tailor = bool(re.search(r"tailor|custom resume|rewrite resume", text))
+    mentioned_reassess = bool(
+        re.search(r"re-?score|re-?assess|re-?analy|which to apply|tell me which", text)
+    )
+    want_all = _wants_all_rows(text, mentioned_tailor or mentioned_reassess)
     number_mentioned = bool(numbers) or want_all
     top_n = 200 if want_all else next((n for n in numbers if 1 <= n <= 100), 10)
     if top_n > 50 and not want_all:
@@ -431,10 +456,6 @@ def _heuristic_plan(message: str, inventory: dict, view_role: str = "", last_pla
             r"what(?:'s| is) in the table|how many",
             text,
         )
-    )
-    mentioned_tailor = bool(re.search(r"tailor|custom resume|rewrite resume", text))
-    mentioned_reassess = bool(
-        re.search(r"re-?score|re-?assess|re-?analy|which to apply|tell me which", text)
     )
     process_table = bool(
         re.search(r"\b(process|handle|continue|go ahead|do (?:them|those|the jobs))\b", text)
@@ -518,7 +539,10 @@ def _normalize_llm_plan(
         last_roles=list((last_plan or fallback).get("roles") or []),
     )
     top_n = data.get("top_n")
-    want_all = bool(data.get("all") or top_n == "all" or top_n == "every")
+    table_work = bool(re.search(r"tailor|re-?score|re-?assess|re-?analy", message or "", re.I))
+    want_all = bool(data.get("all") or top_n == "all" or top_n == "every") or _wants_all_rows(
+        message, table_work
+    )
     try:
         top_n = 200 if want_all else max(1, min(200, int(top_n if top_n not in (None, "all") else fallback.get("top_n") or 10)))
     except (TypeError, ValueError):
@@ -534,8 +558,13 @@ def _normalize_llm_plan(
     bound_min, bound_max = _rating_bounds_from_text(message)
     if bound_min is not None and bound_max is not None:
         min_rating, max_rating = bound_min, bound_max
+    elif want_all:
+        min_rating = 0
+        max_rating = 100
     time_range = data.get("time_range") if data.get("time_range") in ("24h", "week") else fallback.get("time_range") or "week"
     scrape = bool(data.get("scrape"))
+    if table_work and not _is_new_hunt(message):
+        scrape = False
     tailor = bool(data.get("tailor"))
     reassess = bool(data.get("reassess")) or tailor
     intent = str(data.get("intent") or fallback.get("intent") or "hunt").lower()
@@ -580,7 +609,8 @@ intent:
 
 If they say "everything 80 and below" / "80 and below" / "under 80": min_rating=0, max_rating=80.
 "everything" means every row IN THAT BAND, not 0-100.
-If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name PM or project manager, roles=["pm"] only — never fold PM into TPM. If they name both/all, roles=["em","tpm","pm"] and those agents run in parallel. If they name TPM and PM, roles=["tpm","pm"].
+If they name TPM, roles=["tpm"] even if the UI tab is EM. If they name PM or project manager, roles=["pm"] only — never fold PM into TPM. If they name both, all roles, or all three, roles=["em","tpm","pm"] and those agents run in parallel. If they name TPM and PM, roles=["tpm","pm"].
+"tailor and reassess" / "tailor and assess" with no count means every row in that agent's current table: all=true, top_n=200, min_rating=0, max_rating=100, scrape=false unless they also asked to fetch/pull. The word "all" there means every job, not every agent.
 If they say start the TPM, EM, or PM agent and send it my question: intent=answer, that role, question=the previous user question.
 
 steps: ordered objects {"tool": "scrape"|"list_fits"|"process_fits"|"report"|"stop"}.
@@ -792,7 +822,9 @@ def _inventory(role_id: str | None = None) -> dict:
 
 
 AGENT_MAX_TAILORS = 30
+AGENT_MAX_TAILORS_ALL = 200
 AGENT_MAX_MINUTES = 20
+AGENT_MAX_MINUTES_ALL = 120
 AGENT_MAX_LLM_FAILS = 3
 AGENT_EARLY_STOP_HIGH = 10
 AGENT_EARLY_STOP_SCORE = 90
@@ -924,7 +956,7 @@ def _rule_next(role_id: str, plan: dict, state: dict) -> dict:
         return {"tool": "stop", "args": {"reason": f"no jobs at {plan.get('min_rating')}+ yet"}}
     if not plan.get("tailor") and not plan.get("reassess"):
         return {"tool": "stop", "args": {"reason": "list only"}}
-    max_tailors = min(int(plan.get("top_n") or AGENT_MAX_TAILORS), AGENT_MAX_TAILORS)
+    max_tailors = _max_tailors(plan)
     for job in fits:
         key = _job_key(job)
         if key in skipped or job.get("_skip") or not key[0] or not key[1]:
@@ -960,7 +992,7 @@ def _pending_jobs(role_id: str, plan: dict, state: dict, tool: str) -> list[dict
     from resume_tailor import load_tailored_resume
 
     skipped = state.get("skipped") or set()
-    max_tailors = min(int(plan.get("top_n") or AGENT_MAX_TAILORS), AGENT_MAX_TAILORS)
+    max_tailors = _max_tailors(plan)
     already = int(state.get("tailored") or 0)
     pending: list[dict] = []
     for job in state.get("fits") or []:
@@ -1146,8 +1178,9 @@ def _budget_stop(role_id: str, plan: dict, state: dict) -> dict | None:
     if _stop_requested(role_id):
         return {"tool": "stop", "args": {"reason": "stopped because you asked"}}
     elapsed = time.time() - float(state.get("started") or time.time())
-    if elapsed >= AGENT_MAX_MINUTES * 60:
-        return {"tool": "stop", "args": {"reason": f"hit the {AGENT_MAX_MINUTES}-minute budget"}}
+    minutes = _run_minutes(plan)
+    if elapsed >= minutes * 60:
+        return {"tool": "stop", "args": {"reason": f"hit the {minutes}-minute budget"}}
     if int(state.get("llm_fails") or 0) >= AGENT_MAX_LLM_FAILS:
         return {
             "tool": "stop",
@@ -1158,7 +1191,7 @@ def _budget_stop(role_id: str, plan: dict, state: dict) -> dict | None:
         rating = job.get("rating")
         if job.get("reassessed") and isinstance(rating, (int, float)) and rating >= AGENT_EARLY_STOP_SCORE:
             high += 1
-    if high >= AGENT_EARLY_STOP_HIGH:
+    if not plan.get("all") and high >= AGENT_EARLY_STOP_HIGH:
         return {
             "tool": "stop",
             "args": {"reason": f"{high} jobs already at {AGENT_EARLY_STOP_SCORE}+; stopping early"},

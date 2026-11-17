@@ -11,6 +11,7 @@ from fpdf import FPDF
 from llm import (
     _fit_result_from_payload,
     analyze_tailored_resumes_fit_batch,
+    coerce_candidate_yoe,
     complete_json,
     load_context,
     llm_available,
@@ -168,6 +169,8 @@ def _fit_ui_row(fit: dict, pdf_name: str) -> dict:
         "rating": fit.get("score"),
         "ctc": fit.get("ctc") or "",
         "callback": fit.get("callback"),
+        "jd_yoe": fit.get("jd_yoe") or "",
+        "yoe_mismatch": bool(fit.get("yoe_mismatch")),
         "why": fit.get("reasoning") or fit.get("why") or "",
         "weak_vs_jd": ", ".join((fit.get("missed") or [])[:6]),
         "note": note,
@@ -185,13 +188,14 @@ _DATE_RANGE = re.compile(
     re.I,
 )
 _TITLE_AFTER_DATES = re.compile(
-    r"^\s*(.+?)\s*\([^)]+\)\s+",
+    r"^\s*(.+?(?:\s*\([^)]+\))?)\s+(?=[A-Z])",
 )
 _TITLE_BEFORE_VERB = re.compile(
-    r"^\s*([A-Z][A-Za-z0-9 /&,'-]{2,90}?)"
+    r"^\s*([A-Z][A-Za-z0-9 /&,'()+-]{2,90}?)"
     r"(?=\s+(?:Directed|Led|Co-led|Built|Developed|Accelerated|Resolved|"
     r"Mapped|Supported|Assisted|Worked|Created|Optimized|Orchestrated|"
-    r"Drove|Championed|Spearheaded|Owns|Shaped|Stayed|Scaled))",
+    r"Drove|Championed|Spearheaded|Owns|Shaped|Stayed|Scaled|"
+    r"Refactored|Maintained|Collaborated))",
 )
 _TITLE_TAIL = re.compile(
     r"(?i)((?:software|technical|front[- ]?end|ui/?ux|engineering|senior|staff|principal|product)"
@@ -209,33 +213,49 @@ def _norm_label(value: str) -> str:
 
 
 def _experience_block(resume_text: str) -> str:
-    collapsed = _collapse_ws(resume_text)
+    raw = resume_text or ""
+    heading = re.search(
+        r"(?im)^[ \t]*(?:professional[ \t]+experience|work[ \t]+history|experience)[ \t]*$",
+        raw,
+    )
+    if heading:
+        rest = raw[heading.end() :]
+        end = re.search(r"(?im)^[ \t]*education[ \t]*$", rest)
+        block = rest[: end.start()] if end else rest
+        return _collapse_ws(block)
+    collapsed = _collapse_ws(raw)
     match = re.search(
-        r"(?:professional experience|experience)\s+(.+?)(?:\beducation\b|$)",
+        r"\b(?:PROFESSIONAL\s+EXPERIENCE|WORK\s+HISTORY|EXPERIENCE)\b\s+(.+?)(?:\bEDUCATION\b|$)",
         collapsed,
-        re.I,
     )
     return match.group(1).strip() if match else collapsed
+
+
+def _title_from_after(after: str) -> tuple[str, str]:
+    titled = _TITLE_BEFORE_VERB.match(after) or _TITLE_AFTER_DATES.match(after)
+    if titled:
+        return titled.group(1).strip(), after[titled.end() :]
+    return "", after
 
 
 def _header_company_title(before: str, after: str) -> tuple[str, str, str]:
     chunk = before.strip()
     if "●" in chunk:
         chunk = chunk.rsplit("●", 1)[-1].strip()
-    chunk = re.split(r"(?<=[.!?])\s+", chunk)[-1].strip(" •●-")
+    chunk = re.split(r"(?<=[.!?])\s+", chunk)[-1].strip(" •●-|")
     leftover = after
     if "|" in chunk:
         left, right = chunk.rsplit("|", 1)
-        company = left.strip()
+        company = left.strip(" |")
         right = right.strip()
         loc_title = _TITLE_TAIL.search(right)
         title = loc_title.group(1).strip() if loc_title else right
+        if not title:
+            title, leftover = _title_from_after(after)
         return company, title, leftover
-    company = chunk
-    titled = _TITLE_AFTER_DATES.match(after) or _TITLE_BEFORE_VERB.match(after)
-    if titled:
-        return company, titled.group(1).strip(), after[titled.end() :]
-    return company, "", leftover
+    company = chunk.strip(" |")
+    title, leftover = _title_from_after(after)
+    return company, title, leftover
 
 
 def _split_bullets(blob: str) -> list[str]:
@@ -334,8 +354,8 @@ def _tailor_prompt(
 ) -> dict:
     extra = (
         " Also score each tailored resume against its JD in the same object "
-        "(rating, decision, why, reasoning, matched, missed, note, ctc, callback). "
-        "ctc and callback are required on every job."
+        "(rating, decision, why, reasoning, matched, missed, note, ctc, callback, jd_yoe, yoe_mismatch). "
+        "ctc, callback, jd_yoe, and yoe_mismatch are required on every job."
         if score
         else ""
     )
@@ -391,7 +411,11 @@ def _pack_tailor_jobs(indexed_jobs: list[tuple[int, dict]]) -> list[dict]:
 
 
 def _save_from_payload_row(
-    job: dict, row: dict | None, score: bool, source_roles: list[dict]
+    job: dict,
+    row: dict | None,
+    score: bool,
+    source_roles: list[dict],
+    candidate_yoe: float | None = None,
 ) -> dict:
     resume = (row or {}).get("resume") if isinstance(row, dict) else None
     if not isinstance(resume, dict) or not resume.get("name"):
@@ -405,7 +429,7 @@ def _save_from_payload_row(
     except Exception as exc:
         return {"ok": False, "error": f"Could not write PDF: {exc}"}
     if score:
-        fit = _fit_result_from_payload(row, job.get("description", ""))
+        fit = _fit_result_from_payload(row, job.get("description", ""), candidate_yoe)
         fit["reassessed"] = True
         saved["row"] = _fit_ui_row(fit, saved["filename"])
         if (
@@ -431,6 +455,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
 
     resume_text = resume_path.read_text(encoding="utf-8")[:10000]
     context = load_context(role) or {}
+    candidate_yoe = coerce_candidate_yoe(context.get("years_experience"))
     source_roles = parse_source_experience(resume_text)
     results: list[dict] = [{"ok": False, "error": "LLM returned no resume."} for _ in jobs]
 
@@ -449,7 +474,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
             missing: list[tuple[int, dict]] = []
             for global_index, job in indexed:
                 row = by_id.get(f"j{global_index + 1}")
-                saved = _save_from_payload_row(job, row, score, source_roles)
+                saved = _save_from_payload_row(job, row, score, source_roles, candidate_yoe)
                 if saved.get("ok"):
                     results[global_index] = saved
                 else:
@@ -498,6 +523,7 @@ def tailor_jobs_batch(role: str, jobs: list[dict], score: bool = False) -> list[
                     }
                     for _index, job, _saved in pending
                 ],
+                candidate_yoe=candidate_yoe,
             )
             for (index, _job, saved), fit in zip(pending, fits):
                 if not fit:
