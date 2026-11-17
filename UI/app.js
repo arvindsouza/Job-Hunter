@@ -32,6 +32,7 @@ let latestData = {
   },
 };
 let lastTableSignature = "";
+const tableSectionOpen = { under: true, over: false };
 let lastChatSignature = "";
 let lastAgentRunning = { em: false, tpm: false, pm: false };
 let chatOpen = false;
@@ -157,6 +158,128 @@ function settlePendingJobActions(data) {
   }
 }
 
+function applicantCount(job) {
+  const text = String(job && job.applicants ? job.applicants : "").toLowerCase();
+  if (!text || text === "not shown") {
+    return null;
+  }
+  if (!/applicant|people clicked apply|be among/.test(text)) {
+    return null;
+  }
+  if (/100\+|over 100|100 plus/.test(text)) {
+    return 100;
+  }
+  let match = text.match(/(?:over|more than)\s+(\d[\d,]*)/);
+  if (match) {
+    return Number(match[1].replaceAll(",", ""));
+  }
+  match = text.match(/(\d[\d,]*)\s*\+?\s*(?:applicant|people clicked)/);
+  if (match) {
+    return Number(match[1].replaceAll(",", ""));
+  }
+  match = text.match(/(?:applicant[s]?|people clicked apply)[^\d]{0,20}(\d[\d,]*)/);
+  if (match) {
+    return Number(match[1].replaceAll(",", ""));
+  }
+  return null;
+}
+
+function hasHundredPlusApplicants(job) {
+  const count = applicantCount(job);
+  return count != null && count >= 100;
+}
+
+function jobRowHtml(job) {
+  let link = "No link";
+  if (job.link && job.link !== "Link not found") {
+    let label = "Open listing";
+    try {
+      const host = new URL(job.link).hostname;
+      if (host.includes("instahyre.com")) {
+        label = "Open on Instahyre";
+      } else if (host.includes("linkedin.com")) {
+        label = job.easy_apply ? "Easy Apply" : "Open on LinkedIn";
+      } else if (job.easy_apply) {
+        label = "Easy Apply";
+      }
+    } catch {
+      label = job.easy_apply ? "Easy Apply" : "Open listing";
+    }
+    link = `<a href="${escapeHtml(job.link)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+  }
+  return `
+    <tr>
+      <td><span class="job-title">${escapeHtml(job.title || "Untitled")}</span></td>
+      <td>${dash(job.company)}</td>
+      <td>${link}</td>
+      <td class="col-applicants">${
+        job.applicants && job.applicants !== "Not shown" ? dash(job.applicants) : "—"
+      }</td>
+      <td class="rating ${ratingClass(job.rating)}">${ratingLabel(job.rating)}</td>
+      <td class="col-ctc">${dash(job.ctc)}</td>
+      <td class="rating ${ratingClass(job.callback)}">${ratingLabel(job.callback)}</td>
+      <td class="col-yoe${job.yoe_mismatch ? " is-mismatch" : ""}">${
+        job.yoe_mismatch ? escapeHtml(job.jd_yoe || "Mismatch") : "—"
+      }</td>
+      <td class="col-tailor">
+        <button
+          type="button"
+          class="tailor-btn"
+          data-title="${escapeHtml(job.title || "")}"
+          data-company="${escapeHtml(job.company || "")}"
+          data-link="${escapeHtml(job.link || "")}"
+          ${pendingJobLabel(currentView, job, false) ? "disabled" : ""}
+        >${pendingJobLabel(currentView, job, false) || "Tailor resume"}</button>
+      </td>
+      <td class="col-reassess">
+        <button
+          type="button"
+          class="tailor-btn reassess-btn"
+          data-title="${escapeHtml(job.title || "")}"
+          data-company="${escapeHtml(job.company || "")}"
+          data-link="${escapeHtml(job.link || "")}"
+          ${pendingJobLabel(currentView, job, true) ? "disabled" : ""}
+        >${pendingJobLabel(currentView, job, true) || "Re-assess"}</button>
+        ${job.reassessed ? '<span class="reassessed-tag">Re-analyzed</span>' : ""}
+      </td>
+      <td class="col-why">${dash(job.why)}</td>
+      <td class="col-weak">${dash(job.weak_vs_jd)}</td>
+      <td class="col-note">${dash(job.note)}</td>
+    </tr>
+  `;
+}
+
+function jobsTableHtml(jobs) {
+  if (!jobs.length) {
+    return `<p class="empty">No jobs in this section.</p>`;
+  }
+  const rows = jobs.map(jobRowHtml).join("");
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="col-job">Job</th>
+            <th class="col-company">Company</th>
+            <th class="col-link">Link</th>
+            <th class="col-applicants">Applicants</th>
+            <th class="col-rating">Rating</th>
+            <th class="col-ctc" title="Suggested total CTC to enter for this Bengaluru role">CTC</th>
+            <th class="col-callback" title="Chance of a recruiter callback with this resume version">Callback</th>
+            <th class="col-yoe" title="Hard years-of-experience bar on the JD that is above this resume">YOE mismatch</th>
+            <th class="col-tailor">Resume</th>
+            <th class="col-reassess">Re-assess</th>
+            <th class="col-why">Why</th>
+            <th class="col-weak">Weak vs JD</th>
+            <th class="col-note">Note</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderTable(jobs, running, emptyRun) {
   const root = document.getElementById("jobs-table");
   const signature = JSON.stringify({
@@ -178,86 +301,22 @@ function renderTable(jobs, running, emptyRun) {
     return;
   }
 
-  const rows = jobs
-    .map((job) => {
-      let link = "No link";
-      if (job.link && job.link !== "Link not found") {
-        let label = "Open listing";
-        try {
-          const host = new URL(job.link).hostname;
-          if (host.includes("instahyre.com")) {
-            label = "Open on Instahyre";
-          } else if (host.includes("linkedin.com")) {
-            label = job.easy_apply ? "Easy Apply" : "Open on LinkedIn";
-          } else if (job.easy_apply) {
-            label = "Easy Apply";
-          }
-        } catch {
-          label = job.easy_apply ? "Easy Apply" : "Open listing";
-        }
-        link = `<a href="${escapeHtml(job.link)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
-      }
-      return `
-        <tr>
-          <td><span class="job-title">${escapeHtml(job.title || "Untitled")}</span></td>
-          <td>${dash(job.company)}</td>
-          <td>${link}</td>
-          <td class="rating ${ratingClass(job.rating)}">${ratingLabel(job.rating)}</td>
-          <td class="col-ctc">${dash(job.ctc)}</td>
-          <td class="rating ${ratingClass(job.callback)}">${ratingLabel(job.callback)}</td>
-          <td class="col-yoe${job.yoe_mismatch ? " is-mismatch" : ""}">${
-            job.yoe_mismatch ? escapeHtml(job.jd_yoe || "Mismatch") : "—"
-          }</td>
-          <td class="col-tailor">
-            <button
-              type="button"
-              class="tailor-btn"
-              data-title="${escapeHtml(job.title || "")}"
-              data-company="${escapeHtml(job.company || "")}"
-              data-link="${escapeHtml(job.link || "")}"
-              ${pendingJobLabel(currentView, job, false) ? "disabled" : ""}
-            >${pendingJobLabel(currentView, job, false) || "Tailor resume"}</button>
-          </td>
-          <td class="col-reassess">
-            <button
-              type="button"
-              class="tailor-btn reassess-btn"
-              data-title="${escapeHtml(job.title || "")}"
-              data-company="${escapeHtml(job.company || "")}"
-              data-link="${escapeHtml(job.link || "")}"
-              ${pendingJobLabel(currentView, job, true) ? "disabled" : ""}
-            >${pendingJobLabel(currentView, job, true) || "Re-assess"}</button>
-            ${job.reassessed ? '<span class="reassessed-tag">Re-analyzed</span>' : ""}
-          </td>
-          <td class="col-why">${dash(job.why)}</td>
-          <td class="col-weak">${dash(job.weak_vs_jd)}</td>
-          <td class="col-note">${dash(job.note)}</td>
-        </tr>
-      `;
-    })
-    .join("");
-
+  const under = jobs.filter((job) => !hasHundredPlusApplicants(job));
+  const over = jobs.filter(hasHundredPlusApplicants);
   root.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th class="col-job">Job</th>
-            <th class="col-company">Company</th>
-            <th class="col-link">Link</th>
-            <th class="col-rating">Rating</th>
-            <th class="col-ctc" title="Suggested total CTC to enter for this Bengaluru role">CTC</th>
-            <th class="col-callback" title="Chance of a recruiter callback with this resume version">Callback</th>
-            <th class="col-yoe" title="Hard years-of-experience bar on the JD that is above this resume">YOE mismatch</th>
-            <th class="col-tailor">Resume</th>
-            <th class="col-reassess">Re-assess</th>
-            <th class="col-why">Why</th>
-            <th class="col-weak">Weak vs JD</th>
-            <th class="col-note">Note</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
+    <div class="jobs-sections">
+      <details class="jobs-section" data-applicant-section="under" ${
+        tableSectionOpen.under ? "open" : ""
+      }>
+        <summary>Fewer than 100 applicants <span class="jobs-section-count">${under.length}</span></summary>
+        ${jobsTableHtml(under)}
+      </details>
+      <details class="jobs-section" data-applicant-section="over" ${
+        tableSectionOpen.over ? "open" : ""
+      }>
+        <summary>100 or more applicants <span class="jobs-section-count">${over.length}</span></summary>
+        ${jobsTableHtml(over)}
+      </details>
     </div>
   `;
 }
@@ -797,6 +856,17 @@ async function postJobAction(path, button) {
   }
   return payload;
 }
+
+document.getElementById("jobs-table").addEventListener("toggle", (event) => {
+  const section = event.target;
+  if (!(section instanceof HTMLDetailsElement)) {
+    return;
+  }
+  const key = section.dataset.applicantSection;
+  if (key) {
+    tableSectionOpen[key] = section.open;
+  }
+}, true);
 
 document.getElementById("jobs-table").addEventListener("click", async (event) => {
   if (!isJobView(currentView)) {

@@ -648,6 +648,7 @@ def fetch_linkedin_guest_details(url: str) -> dict:
     if match:
         details["description"] = strip_html_text(match.group(0))
     details["easy_apply"] = bool(re.search(r"easy apply", page_html, flags=re.I))
+    details["applicants"] = applicants_from_html(page_html) or "Not shown"
     return details
 
 
@@ -701,6 +702,12 @@ def attach_resume_scores(page, jobs: list[dict], config: dict) -> None:
         job["description"] = details["description"]
         job["apply_url"] = details["apply_url"]
         job["easy_apply"] = details["easy_apply"]
+        incoming = (details.get("applicants") or "").strip()
+        current = (job.get("applicants") or "").strip()
+        if incoming and incoming != "Not shown":
+            job["applicants"] = incoming
+        elif not current or current == "Not shown":
+            job["applicants"] = incoming or current or "Not shown"
         kept.append(job)
     if not kept:
         kept = list(jobs)
@@ -809,10 +816,6 @@ def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> 
             company_match = re.search(r"base-search-card__subtitle[^>]*>([\s\S]*?)</h4>", chunk)
             href_match = re.search(r'href="([^"]+/jobs/view/[^"]+)"', chunk)
             urn_match = re.search(r"urn:li:jobPosting:(\d+)", chunk)
-            applicant_match = re.search(
-                r"job-search-card__applicant-count[^>]*>([\s\S]*?)</span>",
-                chunk,
-            )
             title = strip_html_text(title_match.group(1) if title_match else "")
             if not title:
                 continue
@@ -823,7 +826,7 @@ def extract_linkedin_guest_jobs(search_query: str, limit: int | None = None) -> 
                 link = f"https://www.linkedin.com/jobs/view/{urn_match.group(1)}"
             else:
                 link = "Link not found"
-            applicant_text = strip_html_text(applicant_match.group(1) if applicant_match else "") or "Not shown"
+            applicant_text = applicants_from_html(chunk) or "Not shown"
             if should_skip_job(applicant_text):
                 continue
             key = link if link != "Link not found" else f"{title}|{company}"
@@ -857,6 +860,9 @@ def parse_applicant_count(text: str) -> int | None:
         return None
     if "100+" in lowered or "over 100" in lowered or "100 plus" in lowered:
         return 100
+    match = re.search(r"(?:over|more than)\s+(\d[\d,]*)", lowered)
+    if match:
+        return int(match.group(1).replace(",", ""))
     match = re.search(r"(\d[\d,]*)\s*\+?\s*(?:applicant|people clicked)", lowered)
     if match:
         return int(match.group(1).replace(",", ""))
@@ -866,11 +872,32 @@ def parse_applicant_count(text: str) -> int | None:
     return None
 
 
+def applicants_from_html(page_html: str) -> str:
+    if not page_html:
+        return ""
+    for pattern in (
+        r"num-applicants__caption[^>]*>([\s\S]*?)</(?:span|figcaption|div)>",
+        r"job-search-card__applicant-count[^>]*>([\s\S]*?)</span>",
+        r"jobs-unified-top-card__applicant-count[^>]*>([\s\S]*?)</span>",
+    ):
+        match = re.search(pattern, page_html, flags=re.I)
+        if not match:
+            continue
+        text = strip_html_text(match.group(1))
+        if text:
+            return text
+    match = re.search(
+        r"((?:over|more than)\s+\d[\d,]*\+?\s+(?:applicants|people clicked apply)|"
+        r"\d[\d,]*\s*\+?\s*(?:applicants|people clicked apply)|"
+        r"be among the first \d+ applicants)",
+        page_html,
+        flags=re.I,
+    )
+    return strip_html_text(match.group(1)) if match else ""
+
+
 def should_skip_job(applicant_text: str) -> bool:
-    count = parse_applicant_count(applicant_text)
-    if count is None:
-        return False
-    return count > 99
+    return False
 
 
 def first_text(card, selectors: list[str]) -> str:
@@ -1006,6 +1033,7 @@ def job_to_ui_row(job: dict, candidate_yoe: float | None = None) -> dict:
         "company": job.get("company", ""),
         "link": job.get("link", ""),
         "easy_apply": bool(job.get("easy_apply")),
+        "applicants": job.get("applicants") or "",
         "rating": job.get("score"),
         "ctc": job.get("ctc") or "",
         "callback": job.get("callback"),
@@ -1183,6 +1211,15 @@ def publish_ui(jobs: list[dict], status: str, running: bool, role: str) -> None:
 
     with UI_STATE_LOCK:
         snapshot = read_jobs_file()
+        previous = {
+            (item.get("link"), item.get("title"), item.get("company")): item.get("applicants")
+            for item in snapshot.get("jobs", {}).get(role, []) or []
+        }
+        for row in rows:
+            current = (row.get("applicants") or "").strip()
+            prior = (previous.get((row.get("link"), row.get("title"), row.get("company"))) or "").strip()
+            if (not current or current == "Not shown") and prior and prior != "Not shown":
+                row["applicants"] = prior
         snapshot["jobs"][role] = rows
         running_by_role = snapshot.get("running_by_role") or empty_running_by_role()
         status_by_role = snapshot.get("status_by_role") or empty_status_by_role()
